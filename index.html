@@ -462,7 +462,8 @@ async function recargarConsulta() {
 function renderConsulta() {
   $('#cLogin').hidden = true; const out = $('#cOut'); out.hidden = false;
   const d = cData, notas = new Map(d.notas.map(n => [n.actividad_id, Number(n.nota)]));
-  const per = {}; for (const p of [1,2,3]) per[p] = calcPeriodo(d.actividades.filter(a => a.periodo === p), id => notas.get(id) ?? null);
+  const per = {}; for (const p of [1,2,3]) per[p] = calcPeriodo(d.actividades.filter(a => a.periodo === p && a.activa !== false), id => notas.get(id) ?? null);
+  const asis = (d.asistencia || []).filter(t => t.periodo == null || t.periodo === cPer), cnt = k => asis.filter(t => t.marca === k).length;
   const anio = calcAnio(per), cur = per[cPer];
   const acts = d.actividades.filter(a => a.periodo === cPer);
   out.innerHTML = `
@@ -483,10 +484,13 @@ function renderConsulta() {
     </div>
     <div class="plain"><h3>Actividades</h3>
       ${acts.length ? `<table><thead><tr><th>Actividad</th><th>Componente</th><th class="num">Nota</th></tr></thead><tbody>
-      ${acts.map(a => { const n = notas.get(a.id); return `<tr><td>${esc(a.titulo)}${a.fecha ? `<div class="small-t muted">${esc(fdate(a.fecha))}</div>` : ''}</td><td>${esc(COMP.find(c => c.k === a.componente)?.n)}</td><td class="num">${n == null ? '<span style="color:var(--red)">Pendiente (cuenta 0)</span>' : fmt(n)}</td></tr>`; }).join('')}
+      ${acts.map(a => { const n = notas.get(a.id); return `<tr><td>${esc(a.titulo)}${a.fecha ? `<div class="small-t muted">${esc(fdate(a.fecha))}</div>` : ''}</td><td>${esc(COMP.find(c => c.k === a.componente)?.n)}</td><td class="num">${n == null && a.activa === false ? '<span class="muted">Aún sin calificar</span>' : n == null ? '<span style="color:var(--red)">Pendiente (cuenta 0)</span>' : fmt(n)}</td></tr>`; }).join('')}
       </tbody></table>` : '<p class="muted">Aún no hay actividades registradas en este periodo.</p>'}
     </div>
   </div>
+  ${(d.asistencia || []).length ? `<div class="plain" style="margin-top:18px"><h3>Asistencia del periodo ${cPer}</h3>
+    <div class="kpis" style="margin:8px 0"><div class="kpi"><span>Faltas sin excusa</span><b>${cnt('F')}</b></div><div class="kpi"><span>Faltas con excusa</span><b>${cnt('E')}</b></div><div class="kpi"><span>Retardos</span><b>${cnt('R')}</b></div></div>
+    ${asis.length ? `<p class="small-t muted">${asis.map(t => `${esc(fdate(t.fecha))}: ${({ F: 'falta', E: 'falta con excusa', R: 'retardo' })[t.marca]}`).join(' · ')}</p>` : '<p class="small-t muted">Sin faltas ni retardos en este periodo.</p>'}</div>` : ''}
   <h2 style="margin-top:36px">Mi portafolio de evidencias</h2>
   <div class="two">
     <form class="paper ruled" id="eForm">
@@ -563,6 +567,7 @@ const err = e => { console.error(e); toast('Ocurrió un error: ' + (e?.message |
 function tPerfil() {
   const p = miPerfil || { slug: CONFIG.SITIO, nombre: '', colegio: '', bio: '' };
   body().innerHTML = `<form class="paper ruled" id="perF" style="max-width:720px">
+    <p class="small-t muted">Si usas la Agenda docente, tu nombre y colegio se actualizan desde «Mis datos» cada vez que los cambies allá.</p>
     ${miPerfil ? '' : '<p class="notice">Crea tu perfil para que la parte pública de la página muestre tu material y tu portafolio.</p>'}
     <div class="row"><div><label for="perN">Nombre que verán los estudiantes</label><input id="perN" maxlength="120" value="${esc(p.nombre)}" required></div>
     <div><label for="perC">Colegio</label><input id="perC" maxlength="120" value="${esc(p.colegio)}"></div></div>
@@ -684,7 +689,7 @@ async function tCursos() {
 
 /* ---------- Planilla ---------- */
 async function datosCurso(cursoId, periodo) {
-  const ests = await fetchAll(() => sb.from('aula_estudiantes').select('id,nombre,activo').eq('curso_id', cursoId).order('nombre'));
+  const ests = await fetchAll(() => sb.from('aula_estudiantes').select('id,nombre,activo,agenda_ref').eq('curso_id', cursoId).order('nombre'));
   let qa = () => { let q = sb.from('aula_actividades').select('*').eq('curso_id', cursoId); if (periodo) q = q.eq('periodo', periodo); return q.order('fecha', {nullsFirst:false}).order('creado'); };
   const acts = await fetchAll(qa);
   let notas = [];
@@ -694,20 +699,26 @@ async function datosCurso(cursoId, periodo) {
     notas = notas.concat(await fetchAll(() => sb.from('aula_notas').select('actividad_id,estudiante_id,nota').in('actividad_id', lote)));
   }
   const map = new Map(notas.map(n => [n.actividad_id + '|' + n.estudiante_id, Number(n.nota)]));
-  return { ests: ests.filter(e => e.activo), acts, map };
+  const activas = new Set(notas.map(n => n.actividad_id));
+  const refs = ests.filter(e => e.activo && e.agenda_ref).map(e => e.agenda_ref); let asis = [];
+  for (let i = 0; i < refs.length; i += 100) { const L = refs.slice(i, i + 100); asis = asis.concat(await fetchAll(() => sb.from('aula_asistencia').select('estudiante_ref,fecha,marca,periodo').in('estudiante_ref', L))); }
+  return { ests: ests.filter(e => e.activo), acts, map, activas, asis };
 }
 async function tPlanilla() {
   if (!cursos.length) { body().innerHTML = sinCursos(); return; }
   body().innerHTML = '<p class="muted">Cargando planilla…</p>';
   let d; try { d = await datosCurso(st.curso, st.periodo); } catch (e) { return err(e); }
-  const { ests, acts, map } = d;
+  const { ests, acts, map, activas, asis } = d;
+  const cuenta = (eid) => deEst(acts, eid).filter(a => activas.has(a.id));
+  const inas = e => asis.filter(t => t.estudiante_ref === e.agenda_ref && t.periodo === st.periodo && (t.marca === 'F' || t.marca === 'E')).length;
+  const curSel = cursos.find(x => x.id === st.curso);
   const porComp = COMP.map(c => ({ ...c, acts: acts.filter(a => a.componente === c.k) }));
   const nota = (aid, eid) => map.get(aid + '|' + eid) ?? null;
   const fila = e => {
-    const r = calcPeriodo(deEst(acts, e.id), id => nota(id, e.id));
+    const r = calcPeriodo(cuenta(e.id), id => nota(id, e.id));
     return `<tr data-e="${esc(e.id)}"><td class="name">${esc(e.nombre)}</td>${porComp.map(c => c.acts.map(a => { if (a.estudiante_id && a.estudiante_id !== e.id) return '<td class="na" title="Actividad de otro estudiante">—</td>'; const v = nota(a.id, e.id);
       return `<td><input type="number" inputmode="decimal" min="0" max="100" step="0.1" aria-label="${esc(e.nombre)} – ${esc(a.titulo)}" data-a="${esc(a.id)}" value="${v ?? ''}" class="${v != null && v < 60 ? 'low' : ''}"></td>`; }).join('')
-      + `<td class="num avg" data-c="${c.k}">${fmt(r.comps[c.k])}</td>`).join('')}<td class="num final">${fmt(r.nota)}</td></tr>`;
+      + `<td class="num avg" data-c="${c.k}">${fmt(r.comps[c.k])}</td>`).join('')}<td class="num final">${fmt(r.nota)}</td><td class="num">${e.agenda_ref ? inas(e) : ''}</td></tr>`;
   };
   body().innerHTML = `<div class="row noprint">${selCurso()}
     <div><label for="sPer">Periodo</label><select id="sPer">${[1,2,3].map(p => `<option value="${p}"${p === st.periodo ? ' selected' : ''}>Periodo ${p}</option>`).join('')}</select></div>
@@ -718,9 +729,10 @@ async function tPlanilla() {
     <div><label for="aFec">Fecha</label><input id="aFec" type="date"></div>
     <div style="flex:0 0 auto"><button type="submit">Agregar</button></div></div></form>
   ${!ests.length ? '<div class="notice">Este curso aún no tiene estudiantes activos.</div>' : `
-  <p class="small-t muted">Escribe la nota y pasa a la siguiente casilla: se guarda sola. Una casilla vacía cuenta como 0 en el promedio (SIEE). Escala 20 a 100.</p>
+  ${curSel && curSel.agenda_ref ? '<div class="notice" style="margin-bottom:10px">Este curso se comparte con tu Agenda docente: las actividades y notas que pongas aquí aparecen allá, y las de allá aparecen aquí (recarga la página para ver lo último). Las inasistencias vienen de la Agenda.</div>' : ''}
+  <p class="small-t muted">Escribe la nota y pasa a la siguiente casilla: se guarda sola. Una actividad empieza a contar cuando tiene la primera nota; desde ahí, una casilla vacía cuenta como 0 (SIEE). Escala 20 a 100.</p>
   <div class="scroll plain" style="padding:0"><table class="sheet"><thead>
-    <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota periodo</th></tr>
+    <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota periodo</th><th rowspan="2" class="num" title="Faltas del periodo registradas en la Agenda">Inasist.</th></tr>
     <tr>${porComp.map(c => c.acts.map(a => `<th title="${esc(a.titulo)}" style="max-width:110px">${esc(a.titulo)}${a.estudiante_id ? `<div class="small-t muted" style="font-weight:400">solo ${esc(ests.find(x => x.id === a.estudiante_id)?.nombre || 'un estudiante')}</div>` : ''}<br><button class="ghost small noprint" data-dela="${esc(a.id)}" aria-label="Eliminar ${esc(a.titulo)}" style="min-height:26px;padding:0 6px;margin-top:2px">×</button></th>`).join('') + '<th class="num">Prom.</th>').join('')}</tr>
   </thead><tbody>${ests.map(fila).join('')}</tbody></table></div>`}`;
   bindCurso(tPlanilla);
@@ -750,7 +762,8 @@ async function tPlanilla() {
       }
       if (res.error) { inp.style.outline = '2px solid var(--red)'; return err(res.error); }
       inp.style.outline = ''; inp.classList.toggle('low', map.has(aid + '|' + eid) && map.get(aid + '|' + eid) < 60);
-      const r = calcPeriodo(deEst(acts, eid), id => nota(id, eid));
+      if (raw !== '') activas.add(aid); else if (![...map.keys()].some(k => k.startsWith(aid + '|'))) activas.delete(aid);
+      const r = calcPeriodo(cuenta(eid), id => nota(id, eid));
       tr.querySelectorAll('td.avg').forEach(td => td.textContent = fmt(r.comps[td.dataset.c]));
       tr.querySelector('td.final').textContent = fmt(r.nota);
     });
@@ -764,7 +777,7 @@ async function tPlanilla() {
   }
   $('#btnCsv').onclick = () => {
     const head = ['Estudiante', ...porComp.flatMap(c => [...c.acts.map(a => `${c.n}: ${a.titulo}`), `Prom. ${c.n}`]), `Nota periodo ${st.periodo}`];
-    const rows = ests.map(e => { const r = calcPeriodo(deEst(acts, e.id), id => nota(id, e.id));
+    const rows = ests.map(e => { const r = calcPeriodo(cuenta(e.id), id => nota(id, e.id));
       return [e.nombre, ...porComp.flatMap(c => [...c.acts.map(a => a.estudiante_id && a.estudiante_id !== e.id ? 'N/A' : nota(a.id, e.id) ?? ''), r.comps[c.k] == null ? '' : r.comps[c.k].toFixed(1)]), r.nota == null ? '' : r.nota.toFixed(1)]; });
     const c = cursos.find(x => x.id === st.curso);
     descargarCsv([head, ...rows], `notas_${cursoNombre(c)}_P${st.periodo}.csv`);
@@ -781,9 +794,9 @@ async function tAnual() {
   if (!cursos.length) { body().innerHTML = sinCursos(); return; }
   body().innerHTML = '<p class="muted">Calculando…</p>';
   let d; try { d = await datosCurso(st.curso, null); } catch (e) { return err(e); }
-  const { ests, acts, map } = d;
+  const { ests, acts, map, activas } = d;
   const filas = ests.map(e => { const per = {};
-    for (const p of [1,2,3]) per[p] = calcPeriodo(deEst(acts, e.id).filter(a => a.periodo === p), id => map.get(id + '|' + e.id) ?? null);
+    for (const p of [1,2,3]) per[p] = calcPeriodo(deEst(acts, e.id).filter(a => a.periodo === p && activas.has(a.id)), id => map.get(id + '|' + e.id) ?? null);
     return { e, per, anio: calcAnio(per) }; });
   const prom = arr => { const v = arr.filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   body().innerHTML = `<div class="row noprint">${selCurso()}<div style="flex:0 0 auto"><button class="ghost" id="btnCsv">Exportar CSV</button></div></div>
