@@ -503,6 +503,9 @@ function renderConsulta() {
   ${(d.asistencia || []).length ? `<div class="plain" style="margin-top:18px"><h3>Asistencia del periodo ${cPer}</h3>
     <div class="kpis" style="margin:8px 0"><div class="kpi"><span>Faltas sin excusa</span><b>${cnt('F')}</b></div><div class="kpi"><span>Faltas con excusa</span><b>${cnt('E')}</b></div><div class="kpi"><span>Retardos</span><b>${cnt('R')}</b></div></div>
     ${asis.length ? `<p class="small-t muted">${asis.map(t => `${esc(fdate(t.fecha))}: ${({ F: 'falta', E: 'falta con excusa', R: 'retardo' })[t.marca]}`).join(' · ')}</p>` : '<p class="small-t muted">Sin faltas ni retardos en este periodo.</p>'}</div>` : ''}
+  ${(d.materiales || []).length ? `<h2 style="margin-top:32px">Material de la clase</h2>
+  <div class="stack-list">${d.materiales.map(x => `<article class="card"><div><span class="tag">${esc(TIPOS[x.tipo] || 'Material')}</span>${x.periodo ? `<span class="tag">Periodo ${esc(x.periodo)}</span>` : ''}</div>
+    <h3>${esc(x.titulo)}</h3>${x.descripcion ? `<div class="desc">${esc(x.descripcion)}</div>` : ''}<div class="row"><a class="btn ghost small" href="${safeUrl(x.url)}" target="_blank" rel="noopener">Abrir</a></div></article>`).join('')}</div>` : ''}
   ${d.curso.enlace ? `<div class="paper ruled" style="margin-top:24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
     <div style="flex:1 1 280px"><span class="kick">Clase virtual</span><h3 style="margin:4px 0">${esc(d.curso.plataforma || 'Aula de la clase')}</h3>
     <p class="small-t muted" style="margin:0">Aquí están las tareas, las entregas y los trabajos del curso. Entra con la cuenta del estudiante.</p></div>
@@ -583,11 +586,17 @@ function tPerfil() {
     ${miPerfil ? '' : '<p class="notice">Crea tu perfil para que la parte pública de la página muestre tu material y tu portafolio.</p>'}
     <div class="row"><div><label for="perN">Nombre que verán los estudiantes</label><input id="perN" maxlength="120" value="${esc(p.nombre)}" required${agendaMe ? ' readonly' : ''}></div>
     <div><label for="perC">Colegio</label><input id="perC" maxlength="120" value="${esc(p.colegio)}"${agendaMe ? ' readonly' : ''}></div></div>
+    ${miPerfil && miPerfil.slug !== CONFIG.SITIO ? `<div class="notice warn" style="margin-bottom:12px">La página pública de esta Aula (inicio, material y portafolio) muestra el perfil con identificador <b>${esc(CONFIG.SITIO)}</b>, pero el tuyo es <b>${esc(miPerfil.slug)}</b>. Por eso los visitantes no ven tu material ni tu portafolio. <button type="button" class="small" id="perSitio" style="margin-top:8px">Usar «${esc(CONFIG.SITIO)}» como mi identificador</button></div>` : ''}
     ${agendaMe ? '<p class="small-t muted">El nombre y el colegio vienen de «Mis datos» en tu Agenda docente: cámbialos allá y se actualizan aquí.</p>' : ''}
     <label for="perB" style="margin-top:10px">Presentación</label><textarea id="perB" maxlength="2000">${esc(p.bio)}</textarea>
     <label for="perS" style="margin-top:10px">Identificador del sitio</label><input id="perS" value="${esc(p.slug)}" pattern="[a-z0-9\\-]{3,40}" required>
     <p class="small-t muted">Debe ser igual al valor <span class="code">SITIO</span> configurado en la página (ahora: <span class="code">${esc(CONFIG.SITIO)}</span>). Solo minúsculas, números y guiones.</p>
     <button type="submit">Guardar perfil</button></form>`;
+  if ($('#perSitio')) $('#perSitio').onclick = async () => {
+    const { data, error } = await sb.from('aula_perfil').update({ slug: CONFIG.SITIO, actualizado: new Date().toISOString() }).eq('docente', user.id).select().single();
+    if (error) { toast(error.code === '23505' ? 'Ese identificador ya lo usa otro docente.' : 'No se pudo cambiar.'); return; }
+    miPerfil = data; toast('Listo: tu material y tu portafolio ya se ven en la página pública'); cargarPublico(); tPerfil();
+  };
   $('#perF').onsubmit = async e => {
     e.preventDefault();
     const row = { nombre: $('#perN').value.trim(), colegio: $('#perC').value.trim(), bio: $('#perB').value.trim(), slug: $('#perS').value.trim(), actualizado: new Date().toISOString() };
@@ -881,9 +890,10 @@ async function tAnual() {
 
 /* ---------- Material (panel) ---------- */
 async function tMaterial(edit) {
+  const avisoSitio = miPerfil && miPerfil.slug !== CONFIG.SITIO ? `<div class="notice warn" style="margin-bottom:14px">Tu material sí les aparece a tus estudiantes dentro de «Notas y clase» (según asignatura y grado del curso), pero no en la página pública, porque tu perfil no es el de esta página. Ajústalo en la pestaña <b>Perfil</b>.</div>` : '<p class="small-t muted" style="margin-bottom:12px">El material publicado aparece en la página pública y, a cada estudiante, en «Notas y clase» cuando coinciden la asignatura y el grado de su curso.</p>';
   const { data } = await sb.from('aula_materiales').select('*').eq('docente', user.id).order('creado', { ascending: false });
   const list = data || [], m = edit || { asignatura: '', grado: '6', periodo: '', tipo: 'documento', titulo: '', url: '', descripcion: '', publicado: true };
-  body().innerHTML = `<div class="two"><form class="paper ruled" id="matF"><h3>${edit ? 'Editar material' : 'Nuevo material'}</h3>
+  body().innerHTML = avisoSitio + `<div class="two"><form class="paper ruled" id="matF"><h3>${edit ? 'Editar material' : 'Nuevo material'}</h3>
     <div class="row"><div><label for="mA">Asignatura</label><input id="mA" list="dlAsig2" required maxlength="80" value="${esc(m.asignatura)}"></div>
     <div><label for="mG">Grado</label><select id="mG">${opts(GRADOS, m.grado)}</select></div></div>
     <datalist id="dlAsig2">${ASIGNATURAS.map(a => `<option value="${esc(a)}">`).join('')}</datalist>
