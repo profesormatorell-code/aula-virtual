@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula del profe Bernardo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: cálido y ordenado, como un buen profesor de colegio.
+IDEA: un cuaderno escolar con margen rojo y renglones azules.
+PICTURE: cuaderno abierto con lápiz en la portada; en el panel, la planilla misma.
+COLOUR and TYPE: papel blanco, tinta azul #1f3a93, margen rojo #d62839; Literata + Inter.
+LAYOUT: barra superior, una vista por sección, columnas que se apilan en el celular.
+*/
+:root{color-scheme:light dark;
+--bg:light-dark(#fbfaf6,#111522);--paper:light-dark(#ffffff,#181d2e);--ink:light-dark(#18213a,#e9ecf5);
+--soft:light-dark(#5b6378,#a7aec2);--line:light-dark(#dfe3ee,#2b3248);--rule:light-dark(#e6ecfa,#20273c);
+--blue:light-dark(#1f3a93,#8fa9ff);--blue-bg:light-dark(#eef2fc,#1d2645);--red:light-dark(#d62839,#ff6b78);
+--ok:light-dark(#1d7a46,#6fd19a);--warn:light-dark(#9a5b00,#f3b65a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Literata,Georgia,serif;line-height:1.1;margin:0 0 .4em;text-wrap:balance}
+h1{font-size:clamp(32px,5vw,50px)}h2{font-size:clamp(24px,3vw,32px)}h3{font-size:19px}
+a{color:var(--blue)}p{margin:.3em 0 .8em}
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(4vw,16px)}
+header.top{position:sticky;top:0;z-index:10;background:var(--paper);border-bottom:2px solid var(--blue)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:10px}
+.brand{font-family:Literata,serif;font-weight:700;font-size:20px;color:var(--ink);text-decoration:none;margin-right:auto}
+.brand span{color:var(--red)}
+nav.main{display:flex;flex-wrap:wrap;gap:4px}
+nav.main a{padding:10px 12px;border-radius:8px;text-decoration:none;color:var(--ink);font-weight:500;font-size:15px}
+nav.main a[aria-current=page]{background:var(--blue-bg);color:var(--blue)}
+.band{padding-block:clamp(28px,4vw,56px)}
+.view{display:none}.view.on{display:block}
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:32px;align-items:center}
+.hero p.lead{font-size:18px;color:var(--soft);max-width:60ch}
+.notebook{width:100%;height:auto;max-height:380px}
+.paper{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;
+  background-image:linear-gradient(90deg,transparent 38px,var(--red) 38px,var(--red) 40px,transparent 40px);background-repeat:no-repeat}
+.paper.ruled{padding-left:56px}
+.plain{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{margin:0}.card .meta{font-size:13px;color:var(--soft)}
+.card .desc{font-size:15px;color:var(--soft);flex:1}
+.tag{display:inline-block;font-size:13px;padding:2px 8px;border-radius:99px;background:var(--blue-bg);color:var(--blue);margin-right:4px}
+.tag.red{background:light-dark(#fde8ea,#3a1d24);color:var(--red)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.row>*{flex:1 1 160px}
+label{display:block;font-size:14px;font-weight:500;color:var(--soft)}
+input,select,textarea{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);margin-top:4px}
+textarea{min-height:90px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button,.btn{font:inherit;font-weight:600;font-size:15px;min-height:44px;padding:10px 16px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:light-dark(#fff,#0f1424);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button.ghost,.btn.ghost{background:transparent;color:var(--blue)}
+button.danger{background:transparent;border-color:var(--red);color:var(--red)}
+button.small{min-height:34px;padding:4px 10px;font-size:14px}
+button:disabled{opacity:.5;cursor:default}
+.muted{color:var(--soft)}.small-t{font-size:14px}
+.sub{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.sub button{background:transparent;color:var(--ink);border-color:transparent}
+.sub button.on{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-bg)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:middle}
+th{font-weight:600;font-size:13px;color:var(--soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sheet td,.sheet th{border:1px solid var(--line);padding:4px 6px}
+.sheet th.grp{text-align:center;background:var(--blue-bg);color:var(--blue)}
+.sheet td.name{position:sticky;left:0;background:var(--paper);min-width:170px;font-weight:500}
+.sheet input{width:64px;margin:0;padding:6px;text-align:right;font-variant-numeric:tabular-nums}
+.sheet input.low{color:var(--red);font-weight:600}
+.sheet td.avg{background:var(--rule);font-weight:600}
+.sheet td.final{font-weight:700;color:var(--blue)}
+.big{font-family:Literata,serif;font-size:clamp(34px,6vw,52px);font-weight:700;line-height:1;color:var(--blue)}
+.code{font-family:ui-monospace,Menlo,monospace;letter-spacing:.08em;font-weight:600}
+.notice{padding:12px 14px;border-radius:10px;background:var(--blue-bg);font-size:15px}
+.notice.warn{background:light-dark(#fff4e0,#33270f);color:var(--warn)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90vw}
+#toast.on{opacity:1}
+.stack-list>*+*{margin-top:12px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:24px;align-items:start}
+.kpis{display:flex;flex-wrap:wrap;gap:12px}
+.kpi{flex:1 1 120px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi b{display:block;font-family:Literata,serif;font-size:28px;color:var(--blue)}
+.kpi span{font-size:13px;color:var(--soft)}
+footer{border-top:1px solid var(--line);padding:24px 0;color:var(--soft);font-size:14px}
+@media(max-width:800px){.hero,.two{grid-template-columns:1fr}.notebook{max-height:240px}}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--soft)}.stack td:empty{display:none}}
+@media print{header.top,footer,.noprint{display:none!important}.view{display:none!important}.view.print-on{display:block!important}body{background:#fff;color:#000}}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#inicio">Aula <span>·</span> <span id="brandName" style="color:inherit">Profe</span></a>
+    <nav class="main" aria-label="Secciones">
+      <a href="#inicio">Inicio</a>
+      <a href="#material">Material</a>
+      <a href="#portafolio">Portafolio</a>
+      <a href="#consulta">Notas y evidencias</a>
+      <a href="#panel">Panel docente</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<!-- ============ INICIO ============ -->
+<section class="view" id="v-inicio">
+  <div class="wrap band">
+    <div class="hero">
+      <div>
+        <p class="tag red" id="heroColegio">Colegio</p>
+        <h1 id="heroNombre">Aula virtual</h1>
+        <p class="lead" id="heroBio">Material de clase, portafolio y seguimiento de notas en un solo lugar.</p>
+        <div class="row" style="max-width:480px">
+          <a class="btn" href="#material">Ver material de clase</a>
+          <a class="btn ghost" href="#consulta">Consultar mis notas</a>
+        </div>
+      </div>
+      <svg class="notebook" viewBox="0 0 420 300" role="img" aria-label="Cuaderno abierto con un lápiz">
+        <defs><pattern id="rl" width="10" height="22" patternUnits="userSpaceOnUse"><line x1="0" y1="21" x2="10" y2="21" stroke="#9fb3e6" stroke-width="1"/></pattern></defs>
+        <ellipse cx="210" cy="282" rx="190" ry="12" fill="#1f3a93" opacity=".12"/>
+        <path d="M20 40 Q110 22 208 44 L208 270 Q110 250 20 266Z" fill="#fff" stroke="#c9d2ea"/>
+        <path d="M212 44 Q310 22 400 40 L400 266 Q310 250 212 270Z" fill="#fff" stroke="#c9d2ea"/>
+        <path d="M20 40 Q110 22 208 44 L208 270 Q110 250 20 266Z" fill="url(#rl)"/>
+        <path d="M212 44 Q310 22 400 40 L400 266 Q310 250 212 270Z" fill="url(#rl)"/>
+        <line x1="58" y1="34" x2="58" y2="262" stroke="#d62839" stroke-width="2"/>
+        <line x1="248" y1="38" x2="248" y2="264" stroke="#d62839" stroke-width="2"/>
+        <rect x="204" y="40" width="12" height="232" rx="6" fill="#1f3a93"/>
+        <g fill="#1f3a93" opacity=".75"><rect x="70" y="80" width="110" height="6" rx="3"/><rect x="70" y="102" width="88" height="6" rx="3"/><rect x="70" y="124" width="120" height="6" rx="3"/><rect x="70" y="146" width="70" height="6" rx="3"/></g>
+        <g font-family="Literata,serif" font-weight="700" fill="#d62839"><text x="262" y="96" font-size="30">95</text><text x="262" y="150" font-size="18" fill="#1f3a93">Periodo 3</text></g>
+        <path d="M262 190 l14 14 l28 -32" stroke="#1d7a46" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <g transform="rotate(-32 330 220)"><rect x="250" y="212" width="150" height="16" rx="3" fill="#f2b632"/><rect x="250" y="212" width="150" height="5" fill="#ffd36b"/><rect x="380" y="212" width="20" height="16" fill="#e58aa0"/><path d="M250 212 L228 220 L250 228Z" fill="#e9c79a"/><path d="M234 218 L228 220 L234 222Z" fill="#18213a"/></g>
+      </svg>
+    </div>
+  </div>
+  <div class="wrap band" style="padding-top:0">
+    <h2>Material reciente</h2>
+    <div class="grid" id="homeMat"></div>
+    <h2 style="margin-top:36px">Del portafolio</h2>
+    <div class="grid" id="homePort"></div>
+  </div>
+</section>
+
+<!-- ============ MATERIAL ============ -->
+<section class="view" id="v-material">
+  <div class="wrap band">
+    <h1>Material de clase</h1>
+    <p class="muted">Guías, presentaciones, lecturas y videos organizados por asignatura, grado y periodo.</p>
+    <div class="row" style="margin:16px 0 22px">
+      <div><label for="fAsig">Asignatura</label><select id="fAsig"></select></div>
+      <div><label for="fGrado">Grado</label><select id="fGrado"></select></div>
+      <div><label for="fPer">Periodo</label><select id="fPer"><option value="">Todos</option><option>1</option><option>2</option><option>3</option></select></div>
+      <div><label for="fTxt">Buscar</label><input id="fTxt" type="search" placeholder="Tema, palabra…"></div>
+    </div>
+    <div id="matList"></div>
+  </div>
+</section>
+
+<!-- ============ PORTAFOLIO ============ -->
+<section class="view" id="v-portafolio">
+  <div class="wrap band">
+    <h1>Portafolio docente</h1>
+    <p class="muted">Proyectos, recursos y experiencias de aula.</p>
+    <div class="grid" id="portList" style="margin-top:18px"></div>
+  </div>
+</section>
+
+<!-- ============ CONSULTA ESTUDIANTES ============ -->
+<section class="view" id="v-consulta">
+  <div class="wrap band">
+    <div id="cLogin" class="two">
+      <div>
+        <h1>Notas y evidencias</h1>
+        <p class="muted">Estudiantes y acudientes: escriban el código personal que entregó el docente para ver las notas de cada periodo y el portafolio de evidencias.</p>
+      </div>
+      <form class="paper ruled" id="cForm">
+        <label for="cCode">Código personal</label>
+        <input id="cCode" class="code" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="Ej.: 7KQ2MXRA" required>
+        <p class="small-t muted" style="margin-top:8px">No compartas tu código: con él cualquiera puede ver tus notas.</p>
+        <button type="submit" style="width:100%">Consultar</button>
+        <p id="cErr" class="small-t" style="color:var(--red)"></p>
+      </form>
+    </div>
+    <div id="cOut" hidden></div>
+  </div>
+</section>
+
+<!-- ============ PANEL DOCENTE ============ -->
+<section class="view" id="v-panel">
+  <div class="wrap band">
+    <div id="pLogin" class="two">
+      <div><h1>Panel docente</h1><p class="muted">Entra con el mismo usuario de tu Agenda docente.</p></div>
+      <form class="paper ruled" id="pForm">
+        <label for="pEmail">Correo</label><input id="pEmail" type="email" autocomplete="username" required>
+        <label for="pPass" style="margin-top:10px">Contraseña</label><input id="pPass" type="password" autocomplete="current-password" required>
+        <button type="submit" style="width:100%;margin-top:14px">Entrar</button>
+        <p id="pErr" class="small-t" style="color:var(--red)"></p>
+      </form>
+    </div>
+    <div id="pApp" hidden>
+      <div class="row noprint" style="align-items:center;margin-bottom:10px">
+        <h1 style="flex:1 1 auto;margin:0">Panel docente</h1>
+        <button class="ghost small" id="pOut" style="flex:0 0 auto">Cerrar sesión</button>
+      </div>
+      <div class="sub noprint" id="pTabs">
+        <button data-t="planilla">Planilla de notas</button>
+        <button data-t="anual">Resumen anual</button>
+        <button data-t="cursos">Cursos y estudiantes</button>
+        <button data-t="material">Material</button>
+        <button data-t="portafolio">Portafolio</button>
+        <button data-t="evidencias">Evidencias</button>
+        <button data-t="perfil">Perfil</button>
+      </div>
+      <div id="pBody"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap" id="foot">Aula virtual</div></footer>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+{
+/* ================= CONFIGURACIÓN ================= */
+const CONFIG = {
+  SUPABASE_URL: 'https://dkgoyrnsxmhvkzutreyx.supabase.co',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZ295cm5zeG1odmt6dXRyZXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MTYyMDUsImV4cCI6MjExMTE5MjIwNX0.rtz1bzPhZ7ZvJnRwT6fGINMgMCzy9-fnvMWhstxTENI',
+  SITIO: 'profe-bernardo'   // identificador público; debe coincidir con el de tu Perfil
+};
+const ASIGNATURAS = ['Ética y Valores','Educación Religiosa','Ciencias Sociales'];
+const GRADOS = ['6','7','8','9','10','11'];
+const COMP = [
+  {k:'conocimiento',n:'Conocimiento',w:.30},
+  {k:'examen',n:'Examen de periodo',w:.10},
+  {k:'procedimental',n:'Procedimental',w:.30},
+  {k:'hetero',n:'Heteroevaluación',w:.10},
+  {k:'auto',n:'Autoevaluación',w:.10},
+  {k:'co',n:'Coevaluación',w:.10}];
+const PESO_P = {1:.30,2:.30,3:.40};
+const TIPOS = {documento:'Documento',presentacion:'Presentación',video:'Video',actividad:'Actividad',lectura:'Lectura',enlace:'Enlace'};
+
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => /^https:\/\//i.test(u || '') ? esc(u) : '#';
+const fmt = n => n == null ? '—' : Number(n).toLocaleString('es-CO', {minimumFractionDigits:1, maximumFractionDigits:1});
+const fdate = d => d ? new Date(d.length === 10 ? d + 'T12:00' : d).toLocaleDateString('es-CO', {day:'numeric', month:'short', year:'numeric'}) : '';
+let toastT;
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); };
+const opts = (arr, sel, first) => (first ? `<option value="">${esc(first)}</option>` : '') + arr.map(v => `<option${String(v) === String(sel) ? ' selected' : ''}>${esc(v)}</option>`).join('');
+
+/* Trae todas las filas (Supabase entrega máximo 1000 por consulta) */
+async function fetchAll(build) {
+  let out = [], from = 0;
+  for (;;) {
+    const { data, error } = await build().range(from, from + 999);
+    if (error) throw error;
+    out = out.concat(data);
+    if (data.length < 1000) return out;
+    from += 1000;
+  }
+}
+
+/* ================= CÁLCULO SIEE ================= */
+/* acts: actividades del periodo; nota(actId) → número o null (faltante = 0) */
+function calcPeriodo(acts, nota) {
+  const comps = {}; let suma = 0, pesos = 0;
+  for (const c of COMP) {
+    const a = acts.filter(x => x.componente === c.k);
+    if (!a.length) { comps[c.k] = null; continue; }
+    const prom = a.reduce((s, x) => s + (nota(x.id) ?? 0), 0) / a.length;
+    comps[c.k] = prom; suma += prom * c.w; pesos += c.w;
+  }
+  const completo = COMP.every(c => comps[c.k] != null);
+  return { comps, nota: pesos ? suma / pesos : null, completo, hayDatos: pesos > 0 };
+}
+function calcAnio(per) { // per: {1:{nota,completo,hayDatos},...}
+  let suma = 0, pesos = 0, completo = true;
+  for (const p of [1,2,3]) {
+    if (per[p]?.hayDatos) { suma += per[p].nota * PESO_P[p]; pesos += PESO_P[p]; if (!per[p].completo) completo = false; }
+    else completo = false;
+  }
+  return { nota: pesos ? suma / pesos : null, completo };
+}
+
+/* ================= DATOS PÚBLICOS ================= */
+let perfil = null, materiales = [], portafolio = [];
+async function cargarPublico() {
+  const { data: p } = await sb.from('aula_perfil').select('*').eq('slug', CONFIG.SITIO).maybeSingle();
+  perfil = p;
+  if (perfil) {
+    $('#heroNombre').textContent = perfil.nombre || 'Aula virtual';
+    $('#heroColegio').textContent = perfil.colegio || 'Aula virtual';
+    $('#heroBio').textContent = perfil.bio || 'Material de clase, portafolio y seguimiento de notas en un solo lugar.';
+    $('#brandName').textContent = perfil.nombre || 'Profe';
+    $('#foot').textContent = [perfil.nombre, perfil.colegio].filter(Boolean).join(' · ');
+    document.title = 'Aula · ' + (perfil.nombre || 'Profe');
+    const [m, f] = await Promise.all([
+      sb.from('aula_materiales').select('*').eq('docente', perfil.docente).eq('publicado', true).order('creado', {ascending:false}),
+      sb.from('aula_portafolio').select('*').eq('docente', perfil.docente).eq('publicado', true).order('fecha', {ascending:false, nullsFirst:false})]);
+    materiales = m.data || []; portafolio = f.data || [];
+  }
+  renderPublico();
+}
+const matCard = m => `<article class="card">
+  <div><span class="tag">${esc(TIPOS[m.tipo] || m.tipo)}</span>${m.periodo ? `<span class="tag red">Periodo ${esc(m.periodo)}</span>` : ''}</div>
+  <h3>${esc(m.titulo)}</h3><div class="meta">${esc(m.asignatura)} · Grado ${esc(m.grado)}</div>
+  <div class="desc">${esc(m.descripcion)}</div>
+  <a class="btn ghost" href="${safeUrl(m.url)}" target="_blank" rel="noopener">Abrir</a></article>`;
+const portCard = p => `<article class="card">
+  <div><span class="tag">${esc(p.categoria)}</span>${p.fecha ? `<span class="meta">${esc(fdate(p.fecha))}</span>` : ''}</div>
+  <h3>${esc(p.titulo)}</h3><div class="desc">${esc(p.descripcion)}</div>
+  ${p.url ? `<a class="btn ghost" href="${safeUrl(p.url)}" target="_blank" rel="noopener">Ver</a>` : ''}</article>`;
+const vacio = t => `<p class="notice">${esc(t)}</p>`;
+function renderPublico() {
+  if (!perfil) {
+    const msg = 'La página aún no está configurada. El docente debe entrar al Panel docente y crear su perfil.';
+    $('#homeMat').innerHTML = vacio(msg); $('#homePort').innerHTML = ''; $('#matList').innerHTML = vacio(msg); $('#portList').innerHTML = vacio(msg);
+    return;
+  }
+  $('#homeMat').innerHTML = materiales.slice(0, 4).map(matCard).join('') || vacio('Pronto habrá material publicado.');
+  $('#homePort').innerHTML = portafolio.slice(0, 3).map(portCard).join('') || vacio('Pronto habrá proyectos en el portafolio.');
+  $('#portList').innerHTML = portafolio.map(portCard).join('') || vacio('Aún no hay proyectos publicados.');
+  const asigs = [...new Set(materiales.map(m => m.asignatura))].sort();
+  const grados = [...new Set(materiales.map(m => m.grado))].sort((a, b) => a - b);
+  $('#fAsig').innerHTML = opts(asigs, $('#fAsig').value, 'Todas');
+  $('#fGrado').innerHTML = opts(grados, $('#fGrado').value, 'Todos');
+  renderMat();
+}
+function renderMat() {
+  const a = $('#fAsig').value, g = $('#fGrado').value, p = $('#fPer').value, t = $('#fTxt').value.trim().toLowerCase();
+  const list = materiales.filter(m => (!a || m.asignatura === a) && (!g || m.grado === g) && (!p || String(m.periodo) === p)
+    && (!t || (m.titulo + ' ' + m.descripcion).toLowerCase().includes(t)));
+  if (!list.length) { $('#matList').innerHTML = vacio(materiales.length ? 'No hay material con esos filtros.' : 'Aún no hay material publicado.'); return; }
+  const grupos = {};
+  for (const m of list) (grupos[`${m.asignatura} · Grado ${m.grado}`] ??= []).push(m);
+  $('#matList').innerHTML = Object.keys(grupos).sort().map(k => `<h2 style="margin-top:24px">${esc(k)}</h2><div class="grid">${grupos[k].map(matCard).join('')}</div>`).join('');
+}
+['#fAsig','#fGrado','#fPer'].forEach(s => $(s).addEventListener('change', renderMat));
+$('#fTxt').addEventListener('input', renderMat);
+
+/* ================= CONSULTA (ESTUDIANTE / ACUDIENTE) ================= */
+let cCodigo = null, cData = null, cPer = 1;
+$('#cForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const code = $('#cCode').value.trim().toUpperCase();
+  $('#cErr').textContent = '';
+  const { data, error } = await sb.rpc('aula_consultar', { p_codigo: code });
+  if (error) { $('#cErr').textContent = 'No se pudo consultar. Revisa tu conexión.'; return; }
+  if (!data) { $('#cErr').textContent = 'Código no encontrado. Revísalo con tu docente.'; return; }
+  cCodigo = code; cData = data; $('#cCode').value = '';
+  const actuales = [1,2,3].filter(p => data.actividades.some(a => a.periodo === p));
+  cPer = actuales.length ? actuales[actuales.length - 1] : 1;
+  renderConsulta();
+});
+async function recargarConsulta() {
+  const { data } = await sb.rpc('aula_consultar', { p_codigo: cCodigo });
+  if (data) { cData = data; renderConsulta(); }
+}
+function renderConsulta() {
+  $('#cLogin').hidden = true; const out = $('#cOut'); out.hidden = false;
+  const d = cData, notas = new Map(d.notas.map(n => [n.actividad_id, Number(n.nota)]));
+  const per = {}; for (const p of [1,2,3]) per[p] = calcPeriodo(d.actividades.filter(a => a.periodo === p), id => notas.get(id) ?? null);
+  const anio = calcAnio(per), cur = per[cPer];
+  const acts = d.actividades.filter(a => a.periodo === cPer);
+  out.innerHTML = `
+  <div class="row" style="align-items:center;margin-bottom:14px">
+    <div style="flex:1 1 300px"><p class="tag red">${esc(d.curso.asignatura)} · Grado ${esc(d.curso.grado)}${d.curso.grupo ? ' ' + esc(d.curso.grupo) : ''} · ${esc(d.curso.anio)}</p>
+    <h1 style="margin:6px 0 0">${esc(d.estudiante)}</h1>${d.docente ? `<p class="muted">Docente: ${esc(d.docente)}</p>` : ''}</div>
+    <button class="ghost" id="cSalir" style="flex:0 0 auto">Salir</button>
+  </div>
+  <div class="kpis">${[1,2,3].map(p => `<div class="kpi"><span>Periodo ${p} (${PESO_P[p] * 100}%)</span><b>${fmt(per[p].nota)}</b><span>${per[p].hayDatos ? (per[p].completo ? 'Completo' : 'Parcial') : 'Sin notas'}</span></div>`).join('')}
+    <div class="kpi" style="border-color:var(--blue)"><span>Año</span><b>${fmt(anio.nota)}</b><span>${anio.completo ? 'Final' : 'Acumulado parcial'}</span></div></div>
+  <div class="sub" style="margin-top:24px">${[1,2,3].map(p => `<button data-cp="${p}" class="${p === cPer ? 'on' : ''}">Periodo ${p}</button>`).join('')}</div>
+  <div class="two">
+    <div class="plain"><h3>Componentes del periodo ${cPer}</h3>
+      <table><thead><tr><th>Componente</th><th class="num">Peso</th><th class="num">Nota</th></tr></thead><tbody>
+      ${COMP.map(c => `<tr><td>${esc(c.n)}</td><td class="num">${c.w * 100}%</td><td class="num">${cur.comps[c.k] == null ? '<span class="muted">Sin actividades</span>' : fmt(cur.comps[c.k])}</td></tr>`).join('')}
+      <tr><td><b>Nota del periodo</b></td><td></td><td class="num"><b>${fmt(cur.nota)}</b></td></tr></tbody></table>
+      ${cur.hayDatos && !cur.completo ? '<p class="small-t muted" style="margin-top:10px">Nota parcial: se calcula solo con los componentes que ya tienen actividades.</p>' : ''}
+    </div>
+    <div class="plain"><h3>Actividades</h3>
+      ${acts.length ? `<table><thead><tr><th>Actividad</th><th>Componente</th><th class="num">Nota</th></tr></thead><tbody>
+      ${acts.map(a => { const n = notas.get(a.id); return `<tr><td>${esc(a.titulo)}${a.fecha ? `<div class="small-t muted">${esc(fdate(a.fecha))}</div>` : ''}</td><td>${esc(COMP.find(c => c.k === a.componente)?.n)}</td><td class="num">${n == null ? '<span style="color:var(--red)">Pendiente (cuenta 0)</span>' : fmt(n)}</td></tr>`; }).join('')}
+      </tbody></table>` : '<p class="muted">Aún no hay actividades registradas en este periodo.</p>'}
+    </div>
+  </div>
+  <h2 style="margin-top:36px">Mi portafolio de evidencias</h2>
+  <div class="two">
+    <form class="paper ruled" id="eForm">
+      <h3>Agregar evidencia</h3>
+      <p class="small-t muted">Sube tu trabajo a Google Drive, Canva o YouTube y pega aquí el enlace (compartido como «cualquier persona con el enlace»).</p>
+      <label for="eTit">Título</label><input id="eTit" maxlength="160" required>
+      <label for="eUrl" style="margin-top:8px">Enlace</label><input id="eUrl" type="url" placeholder="https://…" required>
+      <label for="eDesc" style="margin-top:8px">Descripción (opcional)</label><textarea id="eDesc" maxlength="1000"></textarea>
+      <button type="submit" style="width:100%;margin-top:10px">Guardar evidencia</button>
+    </form>
+    <div class="stack-list">${d.evidencias.length ? d.evidencias.map(v => `<article class="card">
+      <div class="meta">${esc(fdate(v.creado))}</div><h3>${esc(v.titulo)}</h3><div class="desc">${esc(v.descripcion)}</div>
+      ${v.comentario ? `<div class="notice"><b>Comentario del docente:</b> ${esc(v.comentario)}</div>` : ''}
+      <div class="row"><a class="btn ghost" href="${safeUrl(v.url)}" target="_blank" rel="noopener">Abrir</a>
+      ${v.comentario ? '' : `<button class="danger" data-del-ev="${esc(v.id)}">Eliminar</button>`}</div></article>`).join('') : vacio('Todavía no has agregado evidencias.')}</div>
+  </div>`;
+  out.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { cPer = +b.dataset.cp; renderConsulta(); });
+  $('#cSalir').onclick = () => { cCodigo = cData = null; out.hidden = true; out.innerHTML = ''; $('#cLogin').hidden = false; };
+  $('#eForm').onsubmit = async e => {
+    e.preventDefault();
+    const { error } = await sb.rpc('aula_subir_evidencia', { p_codigo: cCodigo, p_titulo: $('#eTit').value, p_descripcion: $('#eDesc').value, p_url: $('#eUrl').value });
+    if (error) { toast(error.message.includes('https') ? 'El enlace debe empezar por https://' : 'No se pudo guardar la evidencia.'); return; }
+    toast('Evidencia guardada'); recargarConsulta();
+  };
+  out.querySelectorAll('[data-del-ev]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Eliminar esta evidencia?')) return;
+    await sb.rpc('aula_borrar_evidencia', { p_codigo: cCodigo, p_id: b.dataset.delEv });
+    toast('Evidencia eliminada'); recargarConsulta();
+  });
+}
+
+/* ================= PANEL DOCENTE ================= */
+let user = null, miPerfil = null, cursos = [], pTab = 'planilla';
+const st = { curso: '', periodo: 1 };
+$('#pForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#pErr').textContent = '';
+  const { error } = await sb.auth.signInWithPassword({ email: $('#pEmail').value, password: $('#pPass').value });
+  if (error) $('#pErr').textContent = 'Correo o contraseña incorrectos.';
+});
+$('#pOut').onclick = () => sb.auth.signOut();
+sb.auth.onAuthStateChange((_ev, session) => {
+  const u = session?.user || null;
+  if ((u?.id) === (user?.id)) return;
+  user = u; iniciarPanel();
+});
+async function iniciarPanel() {
+  $('#pLogin').hidden = !!user; $('#pApp').hidden = !user;
+  if (!user) return;
+  const { data } = await sb.from('aula_perfil').select('*').eq('docente', user.id).maybeSingle();
+  miPerfil = data;
+  await cargarCursos();
+  if (!miPerfil) pTab = 'perfil';
+  renderPanel();
+}
+async function cargarCursos() {
+  const { data } = await sb.from('aula_cursos').select('*').order('anio', {ascending:false}).order('asignatura').order('grado').order('grupo');
+  cursos = data || [];
+  if (!cursos.some(c => c.id === st.curso)) st.curso = cursos[0]?.id || '';
+}
+const cursoNombre = c => `${c.asignatura} · ${c.grado}${c.grupo ? ' ' + c.grupo : ''} · ${c.anio}`;
+const selCurso = () => `<div><label for="sCurso">Curso</label><select id="sCurso">${cursos.map(c => `<option value="${esc(c.id)}"${c.id === st.curso ? ' selected' : ''}>${esc(cursoNombre(c))}</option>`).join('')}</select></div>`;
+const bindCurso = fn => { const s = $('#sCurso'); if (s) s.onchange = () => { st.curso = s.value; fn(); }; };
+const sinCursos = () => `<div class="notice">Primero crea un curso en <b>Cursos y estudiantes</b>.</div>`;
+
+$('#pTabs').addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (b) { pTab = b.dataset.t; renderPanel(); } });
+function renderPanel() {
+  document.querySelectorAll('#pTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === pTab));
+  ({ planilla: tPlanilla, anual: tAnual, cursos: tCursos, material: tMaterial, portafolio: tPortafolio, evidencias: tEvidencias, perfil: tPerfil })[pTab]();
+}
+const body = () => $('#pBody');
+const err = e => { console.error(e); toast('Ocurrió un error: ' + (e?.message || e)); };
+
+/* ---------- Perfil ---------- */
+function tPerfil() {
+  const p = miPerfil || { slug: CONFIG.SITIO, nombre: '', colegio: '', bio: '' };
+  body().innerHTML = `<form class="paper ruled" id="perF" style="max-width:720px">
+    ${miPerfil ? '' : '<p class="notice">Crea tu perfil para que la parte pública de la página muestre tu material y tu portafolio.</p>'}
+    <div class="row"><div><label for="perN">Nombre que verán los estudiantes</label><input id="perN" maxlength="120" value="${esc(p.nombre)}" required></div>
+    <div><label for="perC">Colegio</label><input id="perC" maxlength="120" value="${esc(p.colegio)}"></div></div>
+    <label for="perB" style="margin-top:10px">Presentación</label><textarea id="perB" maxlength="2000">${esc(p.bio)}</textarea>
+    <label for="perS" style="margin-top:10px">Identificador del sitio</label><input id="perS" value="${esc(p.slug)}" pattern="[a-z0-9\\-]{3,40}" required>
+    <p class="small-t muted">Debe ser igual al valor <span class="code">SITIO</span> configurado en la página (ahora: <span class="code">${esc(CONFIG.SITIO)}</span>). Solo minúsculas, números y guiones.</p>
+    <button type="submit">Guardar perfil</button></form>`;
+  $('#perF').onsubmit = async e => {
+    e.preventDefault();
+    const row = { nombre: $('#perN').value.trim(), colegio: $('#perC').value.trim(), bio: $('#perB').value.trim(), slug: $('#perS').value.trim(), actualizado: new Date().toISOString() };
+    const q = miPerfil ? sb.from('aula_perfil').update(row).eq('docente', user.id).select().single() : sb.from('aula_perfil').insert(row).select().single();
+    const { data, error } = await q;
+    if (error) { toast(error.code === '23505' ? 'Ese identificador ya está en uso.' : 'No se pudo guardar.'); return; }
+    miPerfil = data; toast('Perfil guardado'); cargarPublico();
+  };
+}
+
+/* ---------- Cursos y estudiantes ---------- */
+async function tCursos() {
+  const c = cursos.find(x => x.id === st.curso);
+  let ests = [];
+  if (c) { const { data } = await sb.from('aula_estudiantes').select('*').eq('curso_id', c.id).order('nombre'); ests = data || []; }
+  body().innerHTML = `<div class="two">
+    <div class="stack-list noprint">
+      <form class="plain" id="curF"><h3>Nuevo curso</h3>
+        <div class="row"><div><label for="curA">Asignatura</label><input id="curA" list="dlAsig" required maxlength="80"></div>
+        <div><label for="curG">Grado</label><select id="curG">${opts(GRADOS)}</select></div></div>
+        <div class="row" style="margin-top:6px"><div><label for="curGr">Grupo</label><input id="curGr" maxlength="20" placeholder="A, 01…"></div>
+        <div><label for="curY">Año</label><input id="curY" type="number" value="${new Date().getFullYear()}"></div></div>
+        <button type="submit" style="margin-top:12px">Crear curso</button></form>
+      <datalist id="dlAsig">${ASIGNATURAS.map(a => `<option value="${esc(a)}">`).join('')}</datalist>
+      ${cursos.length ? `<div class="plain"><h3>Mis cursos</h3>${cursos.map(x => `<div class="row" style="align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
+        <span style="flex:1 1 auto">${esc(cursoNombre(x))}</span><button class="small ${x.id === st.curso ? '' : 'ghost'}" data-open="${esc(x.id)}" style="flex:0 0 auto">Abrir</button></div>`).join('')}</div>` : ''}
+    </div>
+    <div>${c ? `<div class="plain" id="printCodes">
+      <div class="row" style="align-items:center"><h2 style="flex:1 1 auto;margin:0">${esc(cursoNombre(c))}</h2>
+        <button class="ghost small noprint" id="btnPrint" style="flex:0 0 auto">Imprimir códigos</button>
+        <button class="danger small noprint" id="btnDelCur" style="flex:0 0 auto">Eliminar curso</button></div>
+      <p class="muted small-t">${ests.length} estudiantes. El código sirve al estudiante y a su acudiente para consultar en «Notas y evidencias».</p>
+      ${ests.length ? `<table class="stack"><thead><tr><th>Estudiante</th><th>Código</th><th class="noprint">Acciones</th></tr></thead><tbody>
+      ${ests.map(s => `<tr style="${s.activo ? '' : 'opacity:.5'}"><td>${esc(s.nombre)}${s.activo ? '' : ' <span class="tag red">Retirado</span>'}</td><td class="code">${esc(s.codigo)}</td>
+        <td class="noprint"><div class="row" style="gap:4px"><button class="ghost small" data-ren="${esc(s.id)}">Renombrar</button><button class="ghost small" data-cod="${esc(s.id)}">Nuevo código</button>
+        <button class="ghost small" data-act="${esc(s.id)}" data-v="${s.activo ? 0 : 1}">${s.activo ? 'Retirar' : 'Reactivar'}</button><button class="danger small" data-del="${esc(s.id)}">Borrar</button></div></td></tr>`).join('')}</tbody></table>` : ''}
+      <form id="estF" class="noprint" style="margin-top:16px"><label for="estL">Agregar estudiantes (un nombre por línea; puedes pegar la lista desde Excel)</label>
+        <textarea id="estL" placeholder="Apellidos Nombres"></textarea><button type="submit" style="margin-top:8px">Agregar</button></form>
+    </div>` : sinCursos()}</div></div>`;
+  $('#curF').onsubmit = async e => {
+    e.preventDefault();
+    const { data, error } = await sb.from('aula_cursos').insert({ asignatura: $('#curA').value.trim(), grado: $('#curG').value, grupo: $('#curGr').value.trim(), anio: +$('#curY').value }).select().single();
+    if (error) return err(error);
+    st.curso = data.id; await cargarCursos(); toast('Curso creado'); tCursos();
+  };
+  body().querySelectorAll('[data-open]').forEach(b => b.onclick = () => { st.curso = b.dataset.open; tCursos(); });
+  if (!c) return;
+  $('#btnPrint').onclick = () => { const v = $('#v-panel'); v.classList.add('print-on'); document.querySelectorAll('#pBody .two>div:first-child').forEach(x => x.classList.add('noprint')); window.print(); v.classList.remove('print-on'); };
+  $('#btnDelCur').onclick = async () => {
+    if (!confirm(`¿Eliminar el curso ${cursoNombre(c)} con todos sus estudiantes, actividades, notas y evidencias? Esto no se puede deshacer.`)) return;
+    const { error } = await sb.from('aula_cursos').delete().eq('id', c.id); if (error) return err(error);
+    await cargarCursos(); toast('Curso eliminado'); tCursos();
+  };
+  $('#estF').onsubmit = async e => {
+    e.preventDefault();
+    const nombres = $('#estL').value.split('\n').map(s => s.split('\t').filter(Boolean).join(' ').trim()).filter(Boolean);
+    if (!nombres.length) return;
+    const { error } = await sb.from('aula_estudiantes').insert(nombres.map(n => ({ curso_id: c.id, nombre: n.slice(0, 120) })));
+    if (error) return err(error);
+    toast(`${nombres.length} estudiantes agregados`); tCursos();
+  };
+  body().querySelectorAll('[data-ren]').forEach(b => b.onclick = async () => {
+    const s = ests.find(x => x.id === b.dataset.ren); const n = prompt('Nombre del estudiante', s.nombre); if (!n?.trim()) return;
+    const { error } = await sb.from('aula_estudiantes').update({ nombre: n.trim() }).eq('id', s.id); if (error) return err(error); tCursos();
+  });
+  body().querySelectorAll('[data-cod]').forEach(b => b.onclick = async () => {
+    if (!confirm('El código anterior dejará de funcionar. ¿Generar uno nuevo?')) return;
+    const { data: code, error: e1 } = await sb.rpc('aula_nuevo_codigo'); if (e1) return err(e1);
+    const { error } = await sb.from('aula_estudiantes').update({ codigo: code }).eq('id', b.dataset.cod); if (error) return err(error);
+    toast('Código nuevo: ' + code); tCursos();
+  });
+  body().querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
+    const { error } = await sb.from('aula_estudiantes').update({ activo: b.dataset.v === '1' }).eq('id', b.dataset.act); if (error) return err(error); tCursos();
+  });
+  body().querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Borrar al estudiante con todas sus notas y evidencias? Si solo se retiró, usa «Retirar».')) return;
+    const { error } = await sb.from('aula_estudiantes').delete().eq('id', b.dataset.del); if (error) return err(error); tCursos();
+  });
+}
+
+/* ---------- Planilla ---------- */
+async function datosCurso(cursoId, periodo) {
+  const ests = await fetchAll(() => sb.from('aula_estudiantes').select('id,nombre,activo').eq('curso_id', cursoId).order('nombre'));
+  let qa = () => { let q = sb.from('aula_actividades').select('*').eq('curso_id', cursoId); if (periodo) q = q.eq('periodo', periodo); return q.order('fecha', {nullsFirst:false}).order('creado'); };
+  const acts = await fetchAll(qa);
+  let notas = [];
+  const ids = acts.map(a => a.id);
+  for (let i = 0; i < ids.length; i += 100) {
+    const lote = ids.slice(i, i + 100);
+    notas = notas.concat(await fetchAll(() => sb.from('aula_notas').select('actividad_id,estudiante_id,nota').in('actividad_id', lote)));
+  }
+  const map = new Map(notas.map(n => [n.actividad_id + '|' + n.estudiante_id, Number(n.nota)]));
+  return { ests: ests.filter(e => e.activo), acts, map };
+}
+async function tPlanilla() {
+  if (!cursos.length) { body().innerHTML = sinCursos(); return; }
+  body().innerHTML = '<p class="muted">Cargando planilla…</p>';
+  let d; try { d = await datosCurso(st.curso, st.periodo); } catch (e) { return err(e); }
+  const { ests, acts, map } = d;
+  const porComp = COMP.map(c => ({ ...c, acts: acts.filter(a => a.componente === c.k) }));
+  const nota = (aid, eid) => map.get(aid + '|' + eid) ?? null;
+  const fila = e => {
+    const r = calcPeriodo(acts, id => nota(id, e.id));
+    return `<tr data-e="${esc(e.id)}"><td class="name">${esc(e.nombre)}</td>${porComp.map(c => c.acts.map(a => { const v = nota(a.id, e.id);
+      return `<td><input type="number" inputmode="decimal" min="0" max="100" step="0.1" aria-label="${esc(e.nombre)} – ${esc(a.titulo)}" data-a="${esc(a.id)}" value="${v ?? ''}" class="${v != null && v < 60 ? 'low' : ''}"></td>`; }).join('')
+      + `<td class="num avg" data-c="${c.k}">${fmt(r.comps[c.k])}</td>`).join('')}<td class="num final">${fmt(r.nota)}</td></tr>`;
+  };
+  body().innerHTML = `<div class="row noprint">${selCurso()}
+    <div><label for="sPer">Periodo</label><select id="sPer">${[1,2,3].map(p => `<option value="${p}"${p === st.periodo ? ' selected' : ''}>Periodo ${p}</option>`).join('')}</select></div>
+    <div style="flex:0 0 auto"><button class="ghost" id="btnCsv">Exportar CSV</button></div></div>
+  <form class="plain noprint" id="actF" style="margin:16px 0"><h3>Nueva actividad</h3><div class="row">
+    <div><label for="aComp">Componente</label><select id="aComp">${COMP.map(c => `<option value="${c.k}">${esc(c.n)} (${c.w * 100}%)</option>`).join('')}</select></div>
+    <div style="flex:2 1 220px"><label for="aTit">Título</label><input id="aTit" maxlength="120" required placeholder="Taller 2: derechos humanos"></div>
+    <div><label for="aFec">Fecha</label><input id="aFec" type="date"></div>
+    <div style="flex:0 0 auto"><button type="submit">Agregar</button></div></div></form>
+  ${!ests.length ? '<div class="notice">Este curso aún no tiene estudiantes activos.</div>' : `
+  <p class="small-t muted">Escribe la nota y pasa a la siguiente casilla: se guarda sola. Una casilla vacía cuenta como 0 en el promedio (SIEE). Escala 20 a 100.</p>
+  <div class="scroll plain" style="padding:0"><table class="sheet"><thead>
+    <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota periodo</th></tr>
+    <tr>${porComp.map(c => c.acts.map(a => `<th title="${esc(a.titulo)}" style="max-width:110px">${esc(a.titulo)}<br><button class="ghost small noprint" data-dela="${esc(a.id)}" aria-label="Eliminar ${esc(a.titulo)}" style="min-height:26px;padding:0 6px;margin-top:2px">×</button></th>`).join('') + '<th class="num">Prom.</th>').join('')}</tr>
+  </thead><tbody>${ests.map(fila).join('')}</tbody></table></div>`}`;
+  bindCurso(tPlanilla);
+  $('#sPer').onchange = e => { st.periodo = +e.target.value; tPlanilla(); };
+  $('#actF').onsubmit = async e => {
+    e.preventDefault();
+    const { error } = await sb.from('aula_actividades').insert({ curso_id: st.curso, periodo: st.periodo, componente: $('#aComp').value, titulo: $('#aTit').value.trim(), fecha: $('#aFec').value || null });
+    if (error) return err(error); toast('Actividad agregada'); tPlanilla();
+  };
+  body().querySelectorAll('[data-dela]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Eliminar la actividad y todas sus notas?')) return;
+    const { error } = await sb.from('aula_actividades').delete().eq('id', b.dataset.dela); if (error) return err(error); tPlanilla();
+  });
+  const tabla = body().querySelector('.sheet');
+  if (tabla) {
+    tabla.addEventListener('change', async e => {
+      const inp = e.target.closest('input[data-a]'); if (!inp) return;
+      const tr = inp.closest('tr'), eid = tr.dataset.e, aid = inp.dataset.a, raw = inp.value.trim().replace(',', '.');
+      let res;
+      if (raw === '') { res = await sb.from('aula_notas').delete().eq('actividad_id', aid).eq('estudiante_id', eid); if (!res.error) map.delete(aid + '|' + eid); }
+      else {
+        const v = Math.round(Number(raw) * 10) / 10;
+        if (!(v >= 0 && v <= 100)) { toast('La nota debe estar entre 0 y 100'); inp.value = map.get(aid + '|' + eid) ?? ''; return; }
+        if (v < 20) toast('Ojo: la escala del SIEE empieza en 20');
+        res = await sb.from('aula_notas').upsert({ actividad_id: aid, estudiante_id: eid, nota: v }, { onConflict: 'actividad_id,estudiante_id' });
+        if (!res.error) { map.set(aid + '|' + eid, v); inp.value = v; }
+      }
+      if (res.error) { inp.style.outline = '2px solid var(--red)'; return err(res.error); }
+      inp.style.outline = ''; inp.classList.toggle('low', map.has(aid + '|' + eid) && map.get(aid + '|' + eid) < 60);
+      const r = calcPeriodo(acts, id => nota(id, eid));
+      tr.querySelectorAll('td.avg').forEach(td => td.textContent = fmt(r.comps[td.dataset.c]));
+      tr.querySelector('td.final').textContent = fmt(r.nota);
+    });
+    tabla.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || !e.target.matches('input[data-a]')) return;
+      e.preventDefault();
+      const tr = e.target.closest('tr').nextElementSibling;
+      const sig = tr?.querySelector(`input[data-a="${CSS.escape(e.target.dataset.a)}"]`);
+      e.target.blur(); if (sig) { sig.focus(); sig.select(); }
+    });
+  }
+  $('#btnCsv').onclick = () => {
+    const head = ['Estudiante', ...porComp.flatMap(c => [...c.acts.map(a => `${c.n}: ${a.titulo}`), `Prom. ${c.n}`]), `Nota periodo ${st.periodo}`];
+    const rows = ests.map(e => { const r = calcPeriodo(acts, id => nota(id, e.id));
+      return [e.nombre, ...porComp.flatMap(c => [...c.acts.map(a => nota(a.id, e.id) ?? ''), r.comps[c.k] == null ? '' : r.comps[c.k].toFixed(1)]), r.nota == null ? '' : r.nota.toFixed(1)]; });
+    const c = cursos.find(x => x.id === st.curso);
+    descargarCsv([head, ...rows], `notas_${cursoNombre(c)}_P${st.periodo}.csv`);
+  };
+}
+function descargarCsv(rows, nombre) {
+  const csv = '﻿' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = nombre.replace(/[^\wáéíóúñÁÉÍÓÚÑ .·_-]/g, '').replace(/[ ·]+/g, '_'); document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------- Resumen anual ---------- */
+async function tAnual() {
+  if (!cursos.length) { body().innerHTML = sinCursos(); return; }
+  body().innerHTML = '<p class="muted">Calculando…</p>';
+  let d; try { d = await datosCurso(st.curso, null); } catch (e) { return err(e); }
+  const { ests, acts, map } = d;
+  const filas = ests.map(e => { const per = {};
+    for (const p of [1,2,3]) per[p] = calcPeriodo(acts.filter(a => a.periodo === p), id => map.get(id + '|' + e.id) ?? null);
+    return { e, per, anio: calcAnio(per) }; });
+  const prom = arr => { const v = arr.filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  body().innerHTML = `<div class="row noprint">${selCurso()}<div style="flex:0 0 auto"><button class="ghost" id="btnCsv">Exportar CSV</button></div></div>
+  <div class="kpis" style="margin:16px 0">${[1,2,3].map(p => `<div class="kpi"><span>Promedio curso P${p}</span><b>${fmt(prom(filas.map(f => f.per[p].nota)))}</b></div>`).join('')}
+  <div class="kpi"><span>Estudiantes por debajo de 60 (año)</span><b>${filas.filter(f => f.anio.nota != null && f.anio.nota < 60).length}</b></div></div>
+  ${filas.length ? `<div class="plain scroll"><table class="stack"><thead><tr><th>Estudiante</th><th class="num">P1 (30%)</th><th class="num">P2 (30%)</th><th class="num">P3 (40%)</th><th class="num">Año</th><th>Estado</th></tr></thead><tbody>
+  ${filas.map(f => `<tr><td>${esc(f.e.nombre)}</td>${[1,2,3].map(p => `<td class="num">${fmt(f.per[p].nota)}${f.per[p].hayDatos && !f.per[p].completo ? '*' : ''}</td>`).join('')}
+    <td class="num"><b style="color:${f.anio.nota != null && f.anio.nota < 60 ? 'var(--red)' : 'var(--blue)'}">${fmt(f.anio.nota)}</b></td><td class="small-t muted">${f.anio.completo ? 'Final' : 'Parcial'}</td></tr>`).join('')}
+  </tbody></table><p class="small-t muted" style="margin-top:10px">* Periodo con componentes aún sin actividades: nota parcial. «Parcial» en el año = se pondera solo con los periodos que tienen notas.</p></div>` : '<div class="notice">Este curso aún no tiene estudiantes activos.</div>'}`;
+  bindCurso(tAnual);
+  $('#btnCsv').onclick = () => {
+    const c = cursos.find(x => x.id === st.curso);
+    descargarCsv([['Estudiante','P1','P2','P3','Año','Estado'], ...filas.map(f => [f.e.nombre, ...[1,2,3].map(p => f.per[p].nota == null ? '' : f.per[p].nota.toFixed(1)), f.anio.nota == null ? '' : f.anio.nota.toFixed(1), f.anio.completo ? 'Final' : 'Parcial'])], `resumen_${cursoNombre(c)}.csv`);
+  };
+}
+
+/* ---------- Material (panel) ---------- */
+async function tMaterial(edit) {
+  const { data } = await sb.from('aula_materiales').select('*').eq('docente', user.id).order('creado', { ascending: false });
+  const list = data || [], m = edit || { asignatura: '', grado: '6', periodo: '', tipo: 'documento', titulo: '', url: '', descripcion: '', publicado: true };
+  body().innerHTML = `<div class="two"><form class="paper ruled" id="matF"><h3>${edit ? 'Editar material' : 'Nuevo material'}</h3>
+    <div class="row"><div><label for="mA">Asignatura</label><input id="mA" list="dlAsig2" required maxlength="80" value="${esc(m.asignatura)}"></div>
+    <div><label for="mG">Grado</label><select id="mG">${opts(GRADOS, m.grado)}</select></div></div>
+    <datalist id="dlAsig2">${ASIGNATURAS.map(a => `<option value="${esc(a)}">`).join('')}</datalist>
+    <div class="row" style="margin-top:6px"><div><label for="mP">Periodo</label><select id="mP"><option value="">Sin periodo</option>${[1,2,3].map(p => `<option${String(m.periodo) === String(p) ? ' selected' : ''}>${p}</option>`).join('')}</select></div>
+    <div><label for="mT">Tipo</label><select id="mT">${Object.entries(TIPOS).map(([k, v]) => `<option value="${k}"${k === m.tipo ? ' selected' : ''}>${v}</option>`).join('')}</select></div></div>
+    <label for="mTi" style="margin-top:6px">Título</label><input id="mTi" required maxlength="160" value="${esc(m.titulo)}">
+    <label for="mU" style="margin-top:6px">Enlace (Drive, YouTube, Canva…)</label><input id="mU" type="url" required placeholder="https://" value="${esc(m.url)}">
+    <label for="mD" style="margin-top:6px">Descripción</label><textarea id="mD" maxlength="1000">${esc(m.descripcion)}</textarea>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="mPub" style="width:auto;margin:0" ${m.publicado ? 'checked' : ''}> Visible para los estudiantes</label>
+    <div class="row" style="margin-top:10px"><button type="submit">${edit ? 'Guardar cambios' : 'Publicar'}</button>${edit ? '<button type="button" class="ghost" id="mCancel">Cancelar</button>' : ''}</div></form>
+    <div class="stack-list">${list.length ? list.map(x => `<div class="card"><div><span class="tag">${esc(TIPOS[x.tipo])}</span>${x.publicado ? '' : '<span class="tag red">Oculto</span>'}</div>
+      <h3>${esc(x.titulo)}</h3><div class="meta">${esc(x.asignatura)} · Grado ${esc(x.grado)}${x.periodo ? ' · Periodo ' + esc(x.periodo) : ''}</div>
+      <div class="row"><a class="btn ghost small" href="${safeUrl(x.url)}" target="_blank" rel="noopener">Abrir</a><button class="ghost small" data-ed="${esc(x.id)}">Editar</button><button class="danger small" data-del="${esc(x.id)}">Eliminar</button></div></div>`).join('') : vacio('Aún no has publicado material.')}</div></div>`;
+  $('#matF').onsubmit = async e => {
+    e.preventDefault();
+    const row = { asignatura: $('#mA').value.trim(), grado: $('#mG').value, periodo: $('#mP').value ? +$('#mP').value : null, tipo: $('#mT').value, titulo: $('#mTi').value.trim(), url: $('#mU').value.trim(), descripcion: $('#mD').value.trim(), publicado: $('#mPub').checked };
+    if (!/^https:\/\//i.test(row.url)) { toast('El enlace debe empezar por https://'); return; }
+    const { error } = edit ? await sb.from('aula_materiales').update(row).eq('id', edit.id) : await sb.from('aula_materiales').insert(row);
+    if (error) return err(error); toast('Material guardado'); cargarPublico(); tMaterial();
+  };
+  if (edit) $('#mCancel').onclick = () => tMaterial();
+  body().querySelectorAll('[data-ed]').forEach(b => b.onclick = () => { tMaterial(list.find(x => x.id === b.dataset.ed)); window.scrollTo(0, 0); });
+  body().querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Eliminar este material?')) return;
+    const { error } = await sb.from('aula_materiales').delete().eq('id', b.dataset.del); if (error) return err(error); cargarPublico(); tMaterial();
+  });
+}
+
+/* ---------- Portafolio (panel) ---------- */
+async function tPortafolio(edit) {
+  const { data } = await sb.from('aula_portafolio').select('*').eq('docente', user.id).order('fecha', { ascending: false, nullsFirst: false });
+  const list = data || [], p = edit || { titulo: '', categoria: 'Proyecto', descripcion: '', url: '', fecha: '', publicado: true };
+  body().innerHTML = `<div class="two"><form class="paper ruled" id="porF"><h3>${edit ? 'Editar entrada' : 'Nueva entrada del portafolio'}</h3>
+    <label for="oT">Título</label><input id="oT" required maxlength="160" value="${esc(p.titulo)}">
+    <div class="row" style="margin-top:6px"><div><label for="oC">Categoría</label><input id="oC" list="dlCat" maxlength="40" value="${esc(p.categoria)}"></div>
+    <div><label for="oF">Fecha</label><input id="oF" type="date" value="${esc(p.fecha || '')}"></div></div>
+    <datalist id="dlCat"><option value="Proyecto"><option value="OVA"><option value="Experiencia de aula"><option value="Formación"><option value="Publicación"></datalist>
+    <label for="oU" style="margin-top:6px">Enlace (opcional)</label><input id="oU" type="url" placeholder="https://" value="${esc(p.url || '')}">
+    <label for="oD" style="margin-top:6px">Descripción</label><textarea id="oD" maxlength="2000">${esc(p.descripcion)}</textarea>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="oPub" style="width:auto;margin:0" ${p.publicado ? 'checked' : ''}> Visible en la página</label>
+    <div class="row" style="margin-top:10px"><button type="submit">Guardar</button>${edit ? '<button type="button" class="ghost" id="oCancel">Cancelar</button>' : ''}</div></form>
+    <div class="stack-list">${list.length ? list.map(x => `<div class="card"><div><span class="tag">${esc(x.categoria)}</span>${x.publicado ? '' : '<span class="tag red">Oculto</span>'}</div><h3>${esc(x.titulo)}</h3>
+      <div class="row"><button class="ghost small" data-ed="${esc(x.id)}">Editar</button><button class="danger small" data-del="${esc(x.id)}">Eliminar</button></div></div>`).join('') : vacio('Aún no hay entradas.')}</div></div>`;
+  $('#porF').onsubmit = async e => {
+    e.preventDefault();
+    const url = $('#oU').value.trim();
+    if (url && !/^https:\/\//i.test(url)) { toast('El enlace debe empezar por https://'); return; }
+    const row = { titulo: $('#oT').value.trim(), categoria: $('#oC').value.trim() || 'Proyecto', fecha: $('#oF').value || null, url: url || null, descripcion: $('#oD').value.trim(), publicado: $('#oPub').checked };
+    const { error } = edit ? await sb.from('aula_portafolio').update(row).eq('id', edit.id) : await sb.from('aula_portafolio').insert(row);
+    if (error) return err(error); toast('Guardado'); cargarPublico(); tPortafolio();
+  };
+  if (edit) $('#oCancel').onclick = () => tPortafolio();
+  body().querySelectorAll('[data-ed]').forEach(b => b.onclick = () => { tPortafolio(list.find(x => x.id === b.dataset.ed)); window.scrollTo(0, 0); });
+  body().querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Eliminar esta entrada?')) return;
+    const { error } = await sb.from('aula_portafolio').delete().eq('id', b.dataset.del); if (error) return err(error); cargarPublico(); tPortafolio();
+  });
+}
+
+/* ---------- Evidencias de estudiantes ---------- */
+async function tEvidencias() {
+  if (!cursos.length) { body().innerHTML = sinCursos(); return; }
+  const { data: ests } = await sb.from('aula_estudiantes').select('id,nombre').eq('curso_id', st.curso);
+  const nombres = new Map((ests || []).map(e => [e.id, e.nombre]));
+  let evs = [];
+  if (nombres.size) { const { data } = await sb.from('aula_evidencias').select('*').in('estudiante_id', [...nombres.keys()]).order('creado', { ascending: false }); evs = data || []; }
+  const sinCom = evs.filter(v => !v.comentario).length;
+  body().innerHTML = `<div class="row">${selCurso()}</div>
+  <p class="muted" style="margin:12px 0">${evs.length} evidencias · ${sinCom} sin comentario</p>
+  <div class="grid">${evs.length ? evs.map(v => `<article class="card"><div class="meta">${esc(nombres.get(v.estudiante_id))} · ${esc(fdate(v.creado))}</div>
+    <h3>${esc(v.titulo)}</h3><div class="desc">${esc(v.descripcion)}</div><a class="btn ghost small" href="${safeUrl(v.url)}" target="_blank" rel="noopener">Abrir evidencia</a>
+    <label for="com-${esc(v.id)}">Comentario para el estudiante</label><textarea id="com-${esc(v.id)}" maxlength="1000" style="min-height:70px">${esc(v.comentario)}</textarea>
+    <div class="row"><button class="small" data-com="${esc(v.id)}">Guardar comentario</button><button class="danger small" data-del="${esc(v.id)}">Eliminar</button></div></article>`).join('') : vacio('Los estudiantes de este curso aún no han subido evidencias.')}</div>`;
+  bindCurso(tEvidencias);
+  body().querySelectorAll('[data-com]').forEach(b => b.onclick = async () => {
+    const { error } = await sb.from('aula_evidencias').update({ comentario: $('#com-' + CSS.escape(b.dataset.com)).value.trim() }).eq('id', b.dataset.com);
+    if (error) return err(error); toast('Comentario guardado');
+  });
+  body().querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Eliminar esta evidencia?')) return;
+    const { error } = await sb.from('aula_evidencias').delete().eq('id', b.dataset.del); if (error) return err(error); tEvidencias();
+  });
+}
+
+/* ================= NAVEGACIÓN ================= */
+const VISTAS = ['inicio','material','portafolio','consulta','panel'];
+function ruta() {
+  const v = VISTAS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'inicio';
+  VISTAS.forEach(x => $('#v-' + x).classList.toggle('on', x === v));
+  document.querySelectorAll('nav.main a').forEach(a => { if (a.getAttribute('href') === '#' + v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', ruta);
+ruta();
+cargarPublico().catch(e => { console.error(e); renderPublico(); });
+sb.auth.getSession().then(({ data }) => { if (!data.session) iniciarPanel(); });
+}
+</script>
+</body>
+</html>
