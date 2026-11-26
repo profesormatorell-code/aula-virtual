@@ -149,6 +149,19 @@ footer .wrap{display:flex;gap:10px;align-items:center}
 footer .wrap::before{content:"";width:26px;height:26px;flex:none;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffe27a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 7l10-4 10 4-10 4z'/%3E%3Cpath d='M6 9v5c0 2 3 3 6 3s6-1 6-3V9'/%3E%3C/svg%3E")}
 @media(max-width:800px){.hero,.two{grid-template-columns:1fr}.notebook{max-height:170px}.hero{gap:8px}}
 @media(max-width:600px){.brand{font-size:26px}.toagenda{padding:8px 12px;font-size:14px}nav.main a{padding:9px 12px 10px;font-size:14px}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--soft)}.stack td:empty{display:none}}
+#invArea{display:none}
+.inv-page{background:#fff;color:#1d2433;font-family:Lexend,system-ui,sans-serif;padding:8mm 6mm;break-after:page;page-break-after:always;max-width:190mm;margin:0 auto}
+.inv-page:last-child{break-after:auto;page-break-after:auto}
+.inv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:3px solid #1f4d3a;padding-bottom:8px;margin-bottom:14px}
+.inv-head .k{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#5b6475}.inv-head h1{font-size:26px;margin:2px 0 0}.inv-head .c{text-align:right;font-size:13px;color:#5b6475}
+.inv-main{display:grid;grid-template-columns:1fr 46mm;gap:16px;align-items:start}
+.inv-code{border:2px dashed #1f4d3a;border-radius:12px;padding:10px 14px;margin:10px 0 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.inv-code b{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:30px;letter-spacing:.16em}
+.inv-qr{text-align:center;font-size:11.5px;color:#5b6475}.inv-qr svg{width:44mm;height:44mm;display:block;margin:0 auto 4px}
+.inv-steps{margin:0;padding-left:22px;font-size:14.5px;line-height:1.5}.inv-steps li{margin-bottom:7px}
+.inv-note{font-size:12.5px;color:#3d4556;background:#f3f4ef;border-radius:10px;padding:8px 12px;margin-top:10px}
+.inv-foot{margin-top:14px;font-size:12px;color:#5b6475;border-top:1px solid #d9dccf;padding-top:6px;display:flex;justify-content:space-between}
+@media print{body.inv>*:not(#invArea){display:none!important}body.inv #invArea{display:block!important}@page{margin:12mm}}
 @media print{header.top,nav.main,footer,.noprint{display:none!important}.view{display:none!important}.view.print-on{display:block!important}body,main{background:#fff;color:#000}}
 @media(prefers-reduced-motion:reduce){#toast,.card{transition:none}.card:hover{transform:none}}
 </style>
@@ -585,6 +598,39 @@ function tPerfil() {
   };
 }
 
+/* ---------- Invitaciones con código y QR ---------- */
+function cargarScript(src) { return new Promise((ok, mal) => { if (window.qrcode) return ok(); const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = mal; document.head.appendChild(s); }); }
+async function imprimirInvitaciones(c, lista) {
+  if (!lista.length) { toast('Este curso no tiene estudiantes activos.'); return; }
+  try { await cargarScript('vendor/qrcode.js'); } catch (e) { toast('No se pudo preparar el código QR. Revisa tu conexión.'); return; }
+  const base = location.origin + location.pathname, corta = base.replace(/^https?:\/\//, '').replace(/index\.html$/, '');
+  const doc = (miPerfil && miPerfil.nombre) || '', col = (miPerfil && miPerfil.colegio) || '';
+  const plat = c.enlace ? (c.plataforma || 'la plataforma de la clase') : '';
+  const qrSvg = url => { const q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true, alt: 'Código QR' }); };
+  $('#invArea').innerHTML = lista.map(e => { const url = base + '?c=' + encodeURIComponent(e.codigo) + '#consulta';
+    return `<section class="inv-page">
+    <div class="inv-head"><div><div class="k">Invitación al Aula virtual</div><h1>Hola, ${esc(e.nombre)}</h1></div>
+      <div class="c"><b>${esc(c.asignatura)}</b><br>Grado ${esc(c.grado)}${c.grupo ? ' ' + esc(c.grupo) : ''} · ${esc(c.anio)}${doc ? '<br>Docente: ' + esc(doc) : ''}</div></div>
+    <div class="inv-main"><div>
+      <p style="margin:0 0 6px;font-size:15px">Desde el Aula virtual puedes consultar tus notas de cada periodo${plat ? ', tu asistencia y entrar a la clase en ' + esc(plat) : ' y tu asistencia'}. Este es tu código personal:</p>
+      <div class="inv-code"><span>Tu código</span><b>${esc(e.codigo)}</b></div>
+      <ol class="inv-steps">
+        <li><b>Escanea el código QR</b> con la cámara de tu celular: entrarás directo a tus notas. Si prefieres el computador, abre <b>${esc(corta)}</b>.</li>
+        <li>En el menú de arriba toca <b>«Notas y clase»</b>.</li>
+        <li>Escribe tu código <b>${esc(e.codigo)}</b> y toca <b>«Consultar»</b>.</li>
+        <li>Verás la nota de cada periodo, el detalle de tus actividades y tu asistencia. Cambia de periodo con los botones <b>Periodo 1, 2 y 3</b>.</li>
+        ${plat ? `<li>Para tareas y entregas, toca <b>«Ir a la clase en ${esc(plat)}»</b> e ingresa con tu cuenta del colegio.</li>` : ''}
+        <li>Cuando termines, toca <b>«Salir»</b>, sobre todo si usas un computador compartido.</li>
+      </ol>
+      <div class="inv-note"><b>Acudientes:</b> el mismo código les sirve para ver las notas y la asistencia. <b>No compartas tu código</b> con otras personas: con él cualquiera puede ver tus notas. Si lo pierdes, pídele uno nuevo a tu docente.</div>
+    </div>
+    <div class="inv-qr">${qrSvg(url)}Escanéame para entrar a tus notas</div></div>
+    <div class="inv-foot"><span>${esc(col)}</span><span>Guarda esta hoja</span></div></section>`; }).join('');
+  document.body.classList.add('inv');
+  const fin = () => { document.body.classList.remove('inv'); removeEventListener('afterprint', fin); };
+  addEventListener('afterprint', fin); setTimeout(() => window.print(), 150);
+}
+
 /* ---------- Cursos y estudiantes ---------- */
 let avisoTraslado = '';
 async function tCursos() {
@@ -605,7 +651,8 @@ async function tCursos() {
     </div>
     <div>${c ? `<div class="plain" id="printCodes">
       <div class="row" style="align-items:center"><h2 style="flex:1 1 auto;margin:0">${esc(cursoNombre(c))}</h2>
-        <button class="ghost small noprint" id="btnPrint" style="flex:0 0 auto">Imprimir códigos</button>
+        <button class="small noprint" id="btnInv" style="flex:0 0 auto">Imprimir invitaciones</button>
+        <button class="ghost small noprint" id="btnPrint" style="flex:0 0 auto">Lista de códigos</button>
         <button class="danger small noprint" id="btnDelCur" style="flex:0 0 auto">Eliminar curso</button></div>
       <form class="noprint row" id="linkF" style="align-items:flex-end;margin:12px 0;padding:12px;border:1px dashed var(--line);border-radius:12px">
         <div style="flex:1 1 170px"><label for="linkP">Plataforma de la clase</label><input id="linkP" list="dlPlat" maxlength="40" value="${esc(c.plataforma || '')}" placeholder="Google Classroom"></div>
@@ -618,7 +665,7 @@ async function tCursos() {
       <p class="muted small-t">${ests.length} estudiantes. El código sirve al estudiante y a su acudiente para consultar en «Notas y clase». «Trasladar» lo pasa a otro curso con sus notas; «Retirar» lo borra del curso y de la base de datos.</p>
       ${ests.length ? `<table class="stack"><thead><tr><th>Estudiante</th><th>Código</th><th class="noprint">Acciones</th></tr></thead><tbody>
       ${ests.map(s => `<tr style="${s.activo ? '' : 'opacity:.5'}"><td>${esc(s.nombre)}${s.activo ? '' : ' <span class="tag red">Retirado</span>'}</td><td class="code">${esc(s.codigo)}</td>
-        <td class="noprint"><div class="row" style="gap:4px"><button class="ghost small" data-ren="${esc(s.id)}">Renombrar</button><button class="ghost small" data-cod="${esc(s.id)}">Nuevo código</button>
+        <td class="noprint"><div class="row" style="gap:4px"><button class="ghost small" data-inv="${esc(s.id)}">Invitación</button><button class="ghost small" data-ren="${esc(s.id)}">Renombrar</button><button class="ghost small" data-cod="${esc(s.id)}">Nuevo código</button>
         ${s.activo ? '' : `<button class="ghost small" data-act="${esc(s.id)}" data-v="1">Reactivar</button>`}<button class="ghost small" data-tras="${esc(s.id)}">Trasladar</button><button class="danger small" data-ret="${esc(s.id)}">Retirar</button></div></td></tr>`).join('')}</tbody></table>` : ''}
       <form id="estF" class="noprint" style="margin-top:16px"><label for="estL">Agregar estudiantes (un nombre por línea; puedes pegar la lista desde Excel)</label>
         <textarea id="estL" placeholder="Apellidos Nombres"></textarea><button type="submit" style="margin-top:8px">Agregar</button></form>
@@ -642,6 +689,8 @@ async function tCursos() {
     const { error } = await sb.from('aula_cursos').update({ plataforma }).eq('plataforma', ''); if (error) return err(error);
     await cargarCursos(); toast('Plataforma puesta en los cursos que no tenían. Falta pegar el enlace de cada uno.'); tCursos();
   };
+  $('#btnInv').onclick = () => imprimirInvitaciones(c, ests.filter(x => x.activo));
+  body().querySelectorAll('[data-inv]').forEach(b => b.onclick = () => imprimirInvitaciones(c, ests.filter(x => x.id === b.dataset.inv)));
   $('#btnPrint').onclick = () => { const v = $('#v-panel'); v.classList.add('print-on'); document.querySelectorAll('#pBody .two>div:first-child').forEach(x => x.classList.add('noprint')); window.print(); v.classList.remove('print-on'); };
   $('#btnDelCur').onclick = async () => {
     if (!confirm(`¿Eliminar el curso ${cursoNombre(c)} con todos sus estudiantes, actividades, notas y evidencias? Esto no se puede deshacer.`)) return;
@@ -928,10 +977,16 @@ function ruta() {
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', ruta);
+/* Desde el QR de la invitación: ?c=CODIGO entra directo a la consulta */
+(() => { const q = new URLSearchParams(location.search), c = (q.get('c') || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{4,12}$/.test(c)) return;
+  history.replaceState(null, '', location.pathname + '#consulta'); ruta();
+  setTimeout(() => { $('#cCode').value = c; $('#cForm').requestSubmit(); }, 300); })();
 ruta();
 cargarPublico().catch(e => { console.error(e); renderPublico(); });
 sb.auth.getSession().then(({ data }) => { if (!data.session) iniciarPanel(); });
 }
 </script>
+<div id="invArea" aria-hidden="true"></div>
 </body>
 </html>
