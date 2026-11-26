@@ -126,6 +126,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]) .big{color:var(--chy)}}
 .code{font-family:ui-monospace,Menlo,monospace;letter-spacing:.12em;font-weight:700;font-size:20px;text-transform:uppercase}
 .notice{padding:14px 16px;border-radius:12px;background:var(--p0);font-size:15px;border-left:6px solid var(--hi)}
+dialog.acc{border:0;border-radius:16px;padding:0;max-width:min(560px,94vw);width:100%;background:var(--paper,#fff);color:inherit;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+dialog.acc::backdrop{background:rgba(20,24,40,.55)}
+dialog.acc form{padding:22px 24px}dialog.acc h2{margin:0 0 8px}
+dialog.acc .sum{margin:12px 0;padding:12px 14px;border-radius:12px;background:var(--p0);font-size:15px}
+dialog.acc .sum ul{margin:6px 0 0;padding-left:20px}
+dialog.acc .warnbox{border-left:6px solid var(--red);background:light-dark(#ffe4dc,#3a1d17)}
+.sheet td.na{color:var(--muted,#888);text-align:center}
 .notice.warn{background:light-dark(#ffe4dc,#3a1d17);color:var(--warn);border-left-color:var(--red)}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90vw}
 #toast.on{opacity:1}
@@ -336,6 +343,32 @@ function calcPeriodo(acts, nota) {
   }
   const completo = COMP.every(c => comps[c.k] != null);
   return { comps, nota: pesos ? suma / pesos : null, completo, hayDatos: pesos > 0 };
+}
+const deEst = (acts, eid) => acts.filter(a => !a.estudiante_id || a.estudiante_id === eid);
+function dlgAccion({ titulo, intro, palabra, boton, opciones, resumen }) {
+  return new Promise(res => {
+    const d = document.createElement('dialog'); d.className = 'acc';
+    d.innerHTML = `<form method="dialog"><h2>${titulo}</h2><p>${intro}</p>
+      ${opciones ? `<label for="dlgSel">Curso destino</label><select id="dlgSel"><option value="">Elige el curso…</option>${opciones.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('')}</select>` : ''}
+      <div class="sum" id="dlgSum"${opciones ? ' hidden' : ''}></div>
+      <label for="dlgW">Para confirmar escribe <b>${palabra}</b></label><input id="dlgW" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <div class="row" style="margin-top:14px;justify-content:flex-end"><button type="button" class="ghost" id="dlgNo" style="flex:0 0 auto">Cancelar</button>
+      <button type="button" class="danger" id="dlgSi" disabled style="flex:0 0 auto">${boton}</button></div></form>`;
+    document.body.appendChild(d);
+    const sel = d.querySelector('#dlgSel'), sum = d.querySelector('#dlgSum'), w = d.querySelector('#dlgW'), si = d.querySelector('#dlgSi');
+    let listo = !opciones, val = null;
+    const chk = () => { si.disabled = !(listo && w.value.trim().toUpperCase() === palabra); };
+    const pinta = async v => { sum.hidden = false; sum.innerHTML = 'Revisando…'; listo = false; chk();
+      try { sum.innerHTML = await resumen(v); listo = true; } catch (e) { sum.innerHTML = 'No se pudo preparar el resumen: ' + esc(e.message || e); } chk(); };
+    if (sel) sel.onchange = () => { val = sel.value || null; if (val) pinta(val); else { sum.hidden = true; listo = false; chk(); } };
+    else pinta(null);
+    w.oninput = chk;
+    const fin = r => { d.close(); d.remove(); res(r); };
+    d.querySelector('#dlgNo').onclick = () => fin(null);
+    d.addEventListener('cancel', e => { e.preventDefault(); fin(null); });
+    si.onclick = () => fin(opciones ? val : true);
+    d.showModal(); (sel || w).focus();
+  });
 }
 function calcAnio(per) { // per: {1:{nota,completo,hayDatos},...}
   let suma = 0, pesos = 0, completo = true;
@@ -548,6 +581,7 @@ function tPerfil() {
 }
 
 /* ---------- Cursos y estudiantes ---------- */
+let avisoTraslado = '';
 async function tCursos() {
   const c = cursos.find(x => x.id === st.curso);
   let ests = [];
@@ -568,11 +602,12 @@ async function tCursos() {
       <div class="row" style="align-items:center"><h2 style="flex:1 1 auto;margin:0">${esc(cursoNombre(c))}</h2>
         <button class="ghost small noprint" id="btnPrint" style="flex:0 0 auto">Imprimir códigos</button>
         <button class="danger small noprint" id="btnDelCur" style="flex:0 0 auto">Eliminar curso</button></div>
-      <p class="muted small-t">${ests.length} estudiantes. El código sirve al estudiante y a su acudiente para consultar en «Notas y evidencias».</p>
+      ${avisoTraslado ? `<div class="notice" style="margin:10px 0">${avisoTraslado}</div>` : ''}
+      <p class="muted small-t">${ests.length} estudiantes. El código sirve al estudiante y a su acudiente para consultar en «Notas y evidencias». «Trasladar» lo pasa a otro curso con sus notas y evidencias; «Retirar» lo borra del curso y de la base de datos.</p>
       ${ests.length ? `<table class="stack"><thead><tr><th>Estudiante</th><th>Código</th><th class="noprint">Acciones</th></tr></thead><tbody>
       ${ests.map(s => `<tr style="${s.activo ? '' : 'opacity:.5'}"><td>${esc(s.nombre)}${s.activo ? '' : ' <span class="tag red">Retirado</span>'}</td><td class="code">${esc(s.codigo)}</td>
         <td class="noprint"><div class="row" style="gap:4px"><button class="ghost small" data-ren="${esc(s.id)}">Renombrar</button><button class="ghost small" data-cod="${esc(s.id)}">Nuevo código</button>
-        <button class="ghost small" data-act="${esc(s.id)}" data-v="${s.activo ? 0 : 1}">${s.activo ? 'Retirar' : 'Reactivar'}</button><button class="danger small" data-del="${esc(s.id)}">Borrar</button></div></td></tr>`).join('')}</tbody></table>` : ''}
+        ${s.activo ? '' : `<button class="ghost small" data-act="${esc(s.id)}" data-v="1">Reactivar</button>`}<button class="ghost small" data-tras="${esc(s.id)}">Trasladar</button><button class="danger small" data-ret="${esc(s.id)}">Retirar</button></div></td></tr>`).join('')}</tbody></table>` : ''}
       <form id="estF" class="noprint" style="margin-top:16px"><label for="estL">Agregar estudiantes (un nombre por línea; puedes pegar la lista desde Excel)</label>
         <textarea id="estL" placeholder="Apellidos Nombres"></textarea><button type="submit" style="margin-top:8px">Agregar</button></form>
     </div>` : sinCursos()}</div></div>`;
@@ -611,9 +646,38 @@ async function tCursos() {
   body().querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
     const { error } = await sb.from('aula_estudiantes').update({ activo: b.dataset.v === '1' }).eq('id', b.dataset.act); if (error) return err(error); tCursos();
   });
-  body().querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
-    if (!confirm('¿Borrar al estudiante con todas sus notas y evidencias? Si solo se retiró, usa «Retirar».')) return;
-    const { error } = await sb.from('aula_estudiantes').delete().eq('id', b.dataset.del); if (error) return err(error); tCursos();
+  avisoTraslado = '';
+  const compN = k => COMP.find(x => x.k === k)?.n || k;
+  body().querySelectorAll('[data-tras]').forEach(b => b.onclick = async () => {
+    const s = ests.find(x => x.id === b.dataset.tras);
+    const otros = cursos.filter(x => x.id !== c.id);
+    if (!otros.length) { toast('Primero crea el curso al que pasará el estudiante.'); return; }
+    const dest = await dlgAccion({ titulo: 'Trasladar estudiante', palabra: 'TRASLADAR', boton: 'Trasladar',
+      intro: `<b>${esc(s.nombre)}</b> pasará de <b>${esc(cursoNombre(c))}</b> al curso que elijas, con sus notas, evidencias y código de consulta.`,
+      opciones: otros.map(x => ({ v: x.id, t: cursoNombre(x) })),
+      resumen: async v => { const { data: r, error } = await sb.rpc('aula_traslado_resumen', { p_est: s.id, p_dest: v }); if (error) throw error;
+        return `<b>Qué pasará</b><ul><li>${r.coinciden} nota(s) pasan a la actividad del mismo nombre en el curso nuevo.</li>
+          <li>${r.propias} nota(s) sin actividad equivalente viajan con él como actividades solo suyas.</li>
+          <li>${r.evidencias} evidencia(s) y su código siguen igual.</li>
+          <li>${r.pendientes.length ? `${r.pendientes.length} actividad(es) del curso nuevo quedan para calificar (cuentan 0 hasta que pongas la nota): ${r.pendientes.slice(0, 6).map(p => esc(`P${p.periodo} · ${p.titulo}`)).join(', ')}${r.pendientes.length > 6 ? '…' : ''}` : 'No quedan actividades pendientes por calificar.'}</li></ul>`; } });
+    if (!dest) return;
+    const { data: r, error } = await sb.rpc('aula_trasladar', { p_est: s.id, p_dest: dest }); if (error) return err(error);
+    const dn = cursoNombre(cursos.find(x => x.id === dest));
+    toast(`${s.nombre} trasladado a ${dn}`);
+    if (r.pendientes.length) { avisoTraslado = `<b>${esc(s.nombre)}</b> ya está en ${esc(dn)}. Tiene ${r.pendientes.length} actividad(es) por calificar allí: ${r.pendientes.map(p => esc(`P${p.periodo} · ${compN(p.componente)} · ${p.titulo}`)).join('; ')}. Ponle la nota en la Planilla de ese curso.`; }
+    tCursos();
+  });
+  body().querySelectorAll('[data-ret]').forEach(b => b.onclick = async () => {
+    const s = ests.find(x => x.id === b.dataset.ret);
+    const ok = await dlgAccion({ titulo: 'Retirar estudiante', palabra: 'RETIRAR', boton: 'Retirar y borrar',
+      intro: `Úsalo cuando <b>${esc(s.nombre)}</b> se retira del colegio. Se borra de <b>${esc(cursoNombre(c))}</b> y de la base de datos.`,
+      resumen: async () => { const [{ count: nn }, { count: ne }] = await Promise.all([
+          sb.from('aula_notas').select('estudiante_id', { count: 'exact', head: true }).eq('estudiante_id', s.id),
+          sb.from('aula_evidencias').select('id', { count: 'exact', head: true }).eq('estudiante_id', s.id)]);
+        return `<div class="warnbox" style="margin:-12px -14px;padding:12px 14px;border-radius:12px">Se borrarán para siempre <b>${nn ?? 0} nota(s)</b>, <b>${ne ?? 0} evidencia(s)</b> y su código de consulta. Esto no se puede deshacer. Si cambió de curso, usa «Trasladar».</div>`; } });
+    if (!ok) return;
+    const { error } = await sb.rpc('aula_retirar', { p_est: s.id }); if (error) return err(error);
+    toast(`${s.nombre} retirado`); tCursos();
   });
 }
 
@@ -639,8 +703,8 @@ async function tPlanilla() {
   const porComp = COMP.map(c => ({ ...c, acts: acts.filter(a => a.componente === c.k) }));
   const nota = (aid, eid) => map.get(aid + '|' + eid) ?? null;
   const fila = e => {
-    const r = calcPeriodo(acts, id => nota(id, e.id));
-    return `<tr data-e="${esc(e.id)}"><td class="name">${esc(e.nombre)}</td>${porComp.map(c => c.acts.map(a => { const v = nota(a.id, e.id);
+    const r = calcPeriodo(deEst(acts, e.id), id => nota(id, e.id));
+    return `<tr data-e="${esc(e.id)}"><td class="name">${esc(e.nombre)}</td>${porComp.map(c => c.acts.map(a => { if (a.estudiante_id && a.estudiante_id !== e.id) return '<td class="na" title="Actividad de otro estudiante">—</td>'; const v = nota(a.id, e.id);
       return `<td><input type="number" inputmode="decimal" min="0" max="100" step="0.1" aria-label="${esc(e.nombre)} – ${esc(a.titulo)}" data-a="${esc(a.id)}" value="${v ?? ''}" class="${v != null && v < 60 ? 'low' : ''}"></td>`; }).join('')
       + `<td class="num avg" data-c="${c.k}">${fmt(r.comps[c.k])}</td>`).join('')}<td class="num final">${fmt(r.nota)}</td></tr>`;
   };
@@ -656,7 +720,7 @@ async function tPlanilla() {
   <p class="small-t muted">Escribe la nota y pasa a la siguiente casilla: se guarda sola. Una casilla vacía cuenta como 0 en el promedio (SIEE). Escala 20 a 100.</p>
   <div class="scroll plain" style="padding:0"><table class="sheet"><thead>
     <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota periodo</th></tr>
-    <tr>${porComp.map(c => c.acts.map(a => `<th title="${esc(a.titulo)}" style="max-width:110px">${esc(a.titulo)}<br><button class="ghost small noprint" data-dela="${esc(a.id)}" aria-label="Eliminar ${esc(a.titulo)}" style="min-height:26px;padding:0 6px;margin-top:2px">×</button></th>`).join('') + '<th class="num">Prom.</th>').join('')}</tr>
+    <tr>${porComp.map(c => c.acts.map(a => `<th title="${esc(a.titulo)}" style="max-width:110px">${esc(a.titulo)}${a.estudiante_id ? `<div class="small-t muted" style="font-weight:400">solo ${esc(ests.find(x => x.id === a.estudiante_id)?.nombre || 'un estudiante')}</div>` : ''}<br><button class="ghost small noprint" data-dela="${esc(a.id)}" aria-label="Eliminar ${esc(a.titulo)}" style="min-height:26px;padding:0 6px;margin-top:2px">×</button></th>`).join('') + '<th class="num">Prom.</th>').join('')}</tr>
   </thead><tbody>${ests.map(fila).join('')}</tbody></table></div>`}`;
   bindCurso(tPlanilla);
   $('#sPer').onchange = e => { st.periodo = +e.target.value; tPlanilla(); };
@@ -685,7 +749,7 @@ async function tPlanilla() {
       }
       if (res.error) { inp.style.outline = '2px solid var(--red)'; return err(res.error); }
       inp.style.outline = ''; inp.classList.toggle('low', map.has(aid + '|' + eid) && map.get(aid + '|' + eid) < 60);
-      const r = calcPeriodo(acts, id => nota(id, eid));
+      const r = calcPeriodo(deEst(acts, eid), id => nota(id, eid));
       tr.querySelectorAll('td.avg').forEach(td => td.textContent = fmt(r.comps[td.dataset.c]));
       tr.querySelector('td.final').textContent = fmt(r.nota);
     });
@@ -699,8 +763,8 @@ async function tPlanilla() {
   }
   $('#btnCsv').onclick = () => {
     const head = ['Estudiante', ...porComp.flatMap(c => [...c.acts.map(a => `${c.n}: ${a.titulo}`), `Prom. ${c.n}`]), `Nota periodo ${st.periodo}`];
-    const rows = ests.map(e => { const r = calcPeriodo(acts, id => nota(id, e.id));
-      return [e.nombre, ...porComp.flatMap(c => [...c.acts.map(a => nota(a.id, e.id) ?? ''), r.comps[c.k] == null ? '' : r.comps[c.k].toFixed(1)]), r.nota == null ? '' : r.nota.toFixed(1)]; });
+    const rows = ests.map(e => { const r = calcPeriodo(deEst(acts, e.id), id => nota(id, e.id));
+      return [e.nombre, ...porComp.flatMap(c => [...c.acts.map(a => a.estudiante_id && a.estudiante_id !== e.id ? 'N/A' : nota(a.id, e.id) ?? ''), r.comps[c.k] == null ? '' : r.comps[c.k].toFixed(1)]), r.nota == null ? '' : r.nota.toFixed(1)]; });
     const c = cursos.find(x => x.id === st.curso);
     descargarCsv([head, ...rows], `notas_${cursoNombre(c)}_P${st.periodo}.csv`);
   };
@@ -718,7 +782,7 @@ async function tAnual() {
   let d; try { d = await datosCurso(st.curso, null); } catch (e) { return err(e); }
   const { ests, acts, map } = d;
   const filas = ests.map(e => { const per = {};
-    for (const p of [1,2,3]) per[p] = calcPeriodo(acts.filter(a => a.periodo === p), id => map.get(id + '|' + e.id) ?? null);
+    for (const p of [1,2,3]) per[p] = calcPeriodo(deEst(acts, e.id).filter(a => a.periodo === p), id => map.get(id + '|' + e.id) ?? null);
     return { e, per, anio: calcAnio(per) }; });
   const prom = arr => { const v = arr.filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   body().innerHTML = `<div class="row noprint">${selCurso()}<div style="flex:0 0 auto"><button class="ghost" id="btnCsv">Exportar CSV</button></div></div>
