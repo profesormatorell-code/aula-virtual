@@ -412,7 +412,9 @@ async function cargarPublico() {
 }
 const ASIG_C = ['#6a48c9','#b7791f','#0f7cc0'], ASIG_P = ['var(--p3)','var(--p0)','var(--p4)'];
 const aIdx = a => { const i = ASIGNATURAS.indexOf(a); return i < 0 ? 2 : i; };
-const ICO = {documento:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 15h7M9 18h5"/>',presentacion:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8M7 12l3-3 2 2 4-4"/>',video:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9v6l5-3z"/>',actividad:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11"/><circle cx="5" cy="18" r="1.5"/>',lectura:'<path d="M4 5c3-1 5-1 8 1 3-2 5-2 8-1v14c-3-1-5-1-8 1-3-2-5-2-8-1z"/><path d="M12 6v14"/>',enlace:'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>'};
+const ICO = {
+  evaluacion: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 13l2 2 4-4"/><path d="M9 18h7"/>',
+  quiz: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1v.8"/><path d="M12 17h.01"/>',documento:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 15h7M9 18h5"/>',presentacion:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8M7 12l3-3 2 2 4-4"/>',video:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9v6l5-3z"/>',actividad:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11"/><circle cx="5" cy="18" r="1.5"/>',lectura:'<path d="M4 5c3-1 5-1 8 1 3-2 5-2 8-1v14c-3-1-5-1-8 1-3-2-5-2-8-1z"/><path d="M12 6v14"/>',enlace:'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>'};
 const icon = t => `<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICO[t] || ICO.enlace}</svg></span>`;
 const matCard = m => `<article class="card" style="--c:${ASIG_C[aIdx(m.asignatura)]};--p:${ASIG_P[aIdx(m.asignatura)]}">
   <div class="ctop">${icon(m.tipo)}<span class="tipo">${esc(TIPOS[m.tipo] || m.tipo)}</span>${m.periodo ? `<span class="tag red">Periodo ${esc(m.periodo)}</span>` : ''}</div>
