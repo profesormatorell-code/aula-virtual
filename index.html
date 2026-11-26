@@ -596,12 +596,13 @@ async function tCursos() {
         <button type="submit" style="margin-top:12px">Crear curso</button></form>
       <datalist id="dlAsig">${ASIGNATURAS.map(a => `<option value="${esc(a)}">`).join('')}</datalist>
       ${cursos.length ? `<div class="plain"><h3>Mis cursos</h3>${cursos.map(x => `<div class="row" style="align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
-        <span style="flex:1 1 auto">${esc(cursoNombre(x))}</span><button class="small ${x.id === st.curso ? '' : 'ghost'}" data-open="${esc(x.id)}" style="flex:0 0 auto">Abrir</button></div>`).join('')}</div>` : ''}
+        <span style="flex:1 1 auto">${esc(cursoNombre(x))}${x.agenda_ref?' <span class="tag">Agenda</span>':''}</span><button class="small ${x.id === st.curso ? '' : 'ghost'}" data-open="${esc(x.id)}" style="flex:0 0 auto">Abrir</button></div>`).join('')}</div>` : ''}
     </div>
     <div>${c ? `<div class="plain" id="printCodes">
       <div class="row" style="align-items:center"><h2 style="flex:1 1 auto;margin:0">${esc(cursoNombre(c))}</h2>
         <button class="ghost small noprint" id="btnPrint" style="flex:0 0 auto">Imprimir códigos</button>
         <button class="danger small noprint" id="btnDelCur" style="flex:0 0 auto">Eliminar curso</button></div>
+      ${c.agenda_ref ? '<div class="notice" style="margin:10px 0">Este curso viene de tu Agenda docente: los estudiantes que agregues, renombres o traslades allí se actualizan aquí solos. Las notas y evidencias del Aula no cambian.</div>' : ''}
       ${avisoTraslado ? `<div class="notice" style="margin:10px 0">${avisoTraslado}</div>` : ''}
       <p class="muted small-t">${ests.length} estudiantes. El código sirve al estudiante y a su acudiente para consultar en «Notas y evidencias». «Trasladar» lo pasa a otro curso con sus notas y evidencias; «Retirar» lo borra del curso y de la base de datos.</p>
       ${ests.length ? `<table class="stack"><thead><tr><th>Estudiante</th><th>Código</th><th class="noprint">Acciones</th></tr></thead><tbody>
