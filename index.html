@@ -536,11 +536,35 @@ sb.auth.onAuthStateChange((_ev, session) => {
   if ((u?.id) === (user?.id)) return;
   user = u; iniciarPanel();
 });
+/* El nombre y el colegio vienen de «Mis datos» de la Agenda docente (misma cuenta) */
+let agendaMe = null;
+async function perfilDesdeAgenda() {
+  try {
+    const { data: ag } = await sb.from('agendas').select('data').eq('user_id', user.id).maybeSingle();
+    const me = (ag && ag.data && ag.data.me) || {}; const nombre = [me.nombre, me.apellidos].filter(Boolean).join(' ').trim().slice(0, 120), colegio = String(me.inst || '').trim().slice(0, 120);
+    if (!nombre) { agendaMe = null; return; }
+    agendaMe = { nombre, colegio };
+    if (!miPerfil) {
+      const base = ('profe-' + String(me.nombre || nombre).trim().split(/\s+/)[0]).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, '').slice(0, 30);
+      for (const slug of [CONFIG.SITIO, base, (base + '-' + user.id.slice(0, 4)).slice(0, 40)]) {
+        if (!/^[a-z0-9-]{3,40}$/.test(slug || '')) continue;
+        const { data, error } = await sb.from('aula_perfil').insert({ slug, nombre, colegio }).select().single();
+        if (!error) { miPerfil = data; cargarPublico(); break; }
+        if (error.code !== '23505') break;
+      }
+    } else if (miPerfil.nombre !== nombre || (colegio && miPerfil.colegio !== colegio)) {
+      const row = { nombre, actualizado: new Date().toISOString() }; if (colegio) row.colegio = colegio;
+      const { data, error } = await sb.from('aula_perfil').update(row).eq('docente', user.id).select().single();
+      if (!error) { miPerfil = data; cargarPublico(); }
+    }
+  } catch (e) { console.warn('perfil', e); }
+}
 async function iniciarPanel() {
   $('#pLogin').hidden = !!user; $('#pApp').hidden = !user;
   if (!user) return;
   const { data } = await sb.from('aula_perfil').select('*').eq('docente', user.id).maybeSingle();
   miPerfil = data;
+  await perfilDesdeAgenda();
   await cargarCursos();
   if (!miPerfil) pTab = 'perfil';
   renderPanel();
@@ -567,10 +591,10 @@ const err = e => { console.error(e); toast('Ocurrió un error: ' + (e?.message |
 function tPerfil() {
   const p = miPerfil || { slug: CONFIG.SITIO, nombre: '', colegio: '', bio: '' };
   body().innerHTML = `<form class="paper ruled" id="perF" style="max-width:720px">
-    <p class="small-t muted">Si usas la Agenda docente, tu nombre y colegio se actualizan desde «Mis datos» cada vez que los cambies allá.</p>
     ${miPerfil ? '' : '<p class="notice">Crea tu perfil para que la parte pública de la página muestre tu material y tu portafolio.</p>'}
-    <div class="row"><div><label for="perN">Nombre que verán los estudiantes</label><input id="perN" maxlength="120" value="${esc(p.nombre)}" required></div>
-    <div><label for="perC">Colegio</label><input id="perC" maxlength="120" value="${esc(p.colegio)}"></div></div>
+    <div class="row"><div><label for="perN">Nombre que verán los estudiantes</label><input id="perN" maxlength="120" value="${esc(p.nombre)}" required${agendaMe ? ' readonly' : ''}></div>
+    <div><label for="perC">Colegio</label><input id="perC" maxlength="120" value="${esc(p.colegio)}"${agendaMe ? ' readonly' : ''}></div></div>
+    ${agendaMe ? '<p class="small-t muted">El nombre y el colegio vienen de «Mis datos» en tu Agenda docente: cámbialos allá y se actualizan aquí.</p>' : ''}
     <label for="perB" style="margin-top:10px">Presentación</label><textarea id="perB" maxlength="2000">${esc(p.bio)}</textarea>
     <label for="perS" style="margin-top:10px">Identificador del sitio</label><input id="perS" value="${esc(p.slug)}" pattern="[a-z0-9\\-]{3,40}" required>
     <p class="small-t muted">Debe ser igual al valor <span class="code">SITIO</span> configurado en la página (ahora: <span class="code">${esc(CONFIG.SITIO)}</span>). Solo minúsculas, números y guiones.</p>
