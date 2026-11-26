@@ -166,7 +166,7 @@ footer .wrap::before{content:"";width:26px;height:26px;flex:none;background:no-r
     <a href="#inicio" style="--p:var(--p0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>Inicio</a>
     <a href="#material" style="--p:var(--p4)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1 3-2 5-2 8-1v14c-3-1-5-1-8 1-3-2-5-2-8-1z"/><path d="M12 6v14"/></svg>Material</a>
     <a href="#portafolio" style="--p:var(--p3)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12h18"/></svg>Portafolio</a>
-    <a href="#consulta" style="--p:var(--p5)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20L8.5 6h1L14 20M5.8 15h6.4"/><path d="M17 8v6M14 11h6"/></svg>Notas y evidencias</a>
+    <a href="#consulta" style="--p:var(--p5)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20L8.5 6h1L14 20M5.8 15h6.4"/><path d="M17 8v6M14 11h6"/></svg>Notas y clase</a>
     <a href="#panel" style="--p:var(--p1)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6"/></svg>Panel docente</a>
   </div>
 </nav>
@@ -236,8 +236,8 @@ footer .wrap::before{content:"";width:26px;height:26px;flex:none;background:no-r
   <div class="wrap band">
     <div id="cLogin" class="two">
       <div>
-        <span class="kick">Estudiantes y acudientes</span><h1 style="text-decoration:underline .32em var(--p);text-underline-offset:-.12em;text-decoration-skip-ink:none">Notas y evidencias</h1>
-        <p class="muted">Estudiantes y acudientes: escriban el código personal que entregó el docente para ver las notas de cada periodo y el portafolio de evidencias.</p>
+        <span class="kick">Estudiantes y acudientes</span><h1 style="text-decoration:underline .32em var(--p);text-underline-offset:-.12em;text-decoration-skip-ink:none">Notas y clase</h1>
+        <p class="muted">Estudiantes y acudientes: escriban el código personal que entregó el docente para ver las notas de cada periodo, la asistencia y el enlace a la clase virtual del curso.</p>
       </div>
       <form class="paper ruled" id="cForm">
         <label for="cCode">Código personal</label>
@@ -275,7 +275,6 @@ footer .wrap::before{content:"";width:26px;height:26px;flex:none;background:no-r
         <button data-t="cursos">Cursos y estudiantes</button>
         <button data-t="material">Material</button>
         <button data-t="portafolio">Portafolio</button>
-        <button data-t="evidencias">Evidencias</button>
         <button data-t="perfil">Perfil</button>
       </div>
       <div id="pBody"></div>
@@ -491,35 +490,12 @@ function renderConsulta() {
   ${(d.asistencia || []).length ? `<div class="plain" style="margin-top:18px"><h3>Asistencia del periodo ${cPer}</h3>
     <div class="kpis" style="margin:8px 0"><div class="kpi"><span>Faltas sin excusa</span><b>${cnt('F')}</b></div><div class="kpi"><span>Faltas con excusa</span><b>${cnt('E')}</b></div><div class="kpi"><span>Retardos</span><b>${cnt('R')}</b></div></div>
     ${asis.length ? `<p class="small-t muted">${asis.map(t => `${esc(fdate(t.fecha))}: ${({ F: 'falta', E: 'falta con excusa', R: 'retardo' })[t.marca]}`).join(' · ')}</p>` : '<p class="small-t muted">Sin faltas ni retardos en este periodo.</p>'}</div>` : ''}
-  <h2 style="margin-top:36px">Mi portafolio de evidencias</h2>
-  <div class="two">
-    <form class="paper ruled" id="eForm">
-      <h3>Agregar evidencia</h3>
-      <p class="small-t muted">Sube tu trabajo a Google Drive, Canva o YouTube y pega aquí el enlace (compartido como «cualquier persona con el enlace»).</p>
-      <label for="eTit">Título</label><input id="eTit" maxlength="160" required>
-      <label for="eUrl" style="margin-top:8px">Enlace</label><input id="eUrl" type="url" placeholder="https://…" required>
-      <label for="eDesc" style="margin-top:8px">Descripción (opcional)</label><textarea id="eDesc" maxlength="1000"></textarea>
-      <button type="submit" style="width:100%;margin-top:10px">Guardar evidencia</button>
-    </form>
-    <div class="stack-list">${d.evidencias.length ? d.evidencias.map(v => `<article class="card">
-      <div class="meta">${esc(fdate(v.creado))}</div><h3>${esc(v.titulo)}</h3><div class="desc">${esc(v.descripcion)}</div>
-      ${v.comentario ? `<div class="notice"><b>Comentario del docente:</b> ${esc(v.comentario)}</div>` : ''}
-      <div class="row"><a class="btn ghost" href="${safeUrl(v.url)}" target="_blank" rel="noopener">Abrir</a>
-      ${v.comentario ? '' : `<button class="danger" data-del-ev="${esc(v.id)}">Eliminar</button>`}</div></article>`).join('') : vacio('Todavía no has agregado evidencias.')}</div>
-  </div>`;
+  ${d.curso.enlace ? `<div class="paper ruled" style="margin-top:24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    <div style="flex:1 1 280px"><span class="kick">Clase virtual</span><h3 style="margin:4px 0">${esc(d.curso.plataforma || 'Aula de la clase')}</h3>
+    <p class="small-t muted" style="margin:0">Aquí están las tareas, las entregas y los trabajos del curso. Entra con la cuenta del estudiante.</p></div>
+    <a class="btn" href="${safeUrl(d.curso.enlace)}" target="_blank" rel="noopener" style="flex:0 0 auto">Ir a la clase en ${esc(d.curso.plataforma || 'la plataforma')}</a></div>` : ''}`;
   out.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { cPer = +b.dataset.cp; renderConsulta(); });
   $('#cSalir').onclick = () => { cCodigo = cData = null; out.hidden = true; out.innerHTML = ''; $('#cLogin').hidden = false; };
-  $('#eForm').onsubmit = async e => {
-    e.preventDefault();
-    const { error } = await sb.rpc('aula_subir_evidencia', { p_codigo: cCodigo, p_titulo: $('#eTit').value, p_descripcion: $('#eDesc').value, p_url: $('#eUrl').value });
-    if (error) { toast(error.message.includes('https') ? 'El enlace debe empezar por https://' : 'No se pudo guardar la evidencia.'); return; }
-    toast('Evidencia guardada'); recargarConsulta();
-  };
-  out.querySelectorAll('[data-del-ev]').forEach(b => b.onclick = async () => {
-    if (!confirm('¿Eliminar esta evidencia?')) return;
-    await sb.rpc('aula_borrar_evidencia', { p_codigo: cCodigo, p_id: b.dataset.delEv });
-    toast('Evidencia eliminada'); recargarConsulta();
-  });
 }
 
 /* ================= PANEL DOCENTE ================= */
@@ -631,9 +607,15 @@ async function tCursos() {
       <div class="row" style="align-items:center"><h2 style="flex:1 1 auto;margin:0">${esc(cursoNombre(c))}</h2>
         <button class="ghost small noprint" id="btnPrint" style="flex:0 0 auto">Imprimir códigos</button>
         <button class="danger small noprint" id="btnDelCur" style="flex:0 0 auto">Eliminar curso</button></div>
+      <form class="noprint row" id="linkF" style="align-items:flex-end;margin:12px 0;padding:12px;border:1px dashed var(--line);border-radius:12px">
+        <div style="flex:1 1 170px"><label for="linkP">Plataforma de la clase</label><input id="linkP" list="dlPlat" maxlength="40" value="${esc(c.plataforma || '')}" placeholder="Google Classroom"></div>
+        <div style="flex:2 1 260px"><label for="linkU">Enlace de la clase</label><input id="linkU" type="url" maxlength="500" value="${esc(c.enlace || '')}" placeholder="https://classroom.google.com/c/…"></div>
+        <div style="flex:0 0 auto;display:flex;gap:6px"><button type="submit" class="small">Guardar enlace</button>${cursos.length > 1 ? '<button type="button" class="ghost small" id="linkAll" title="Usar la misma plataforma en todos los cursos sin enlace">Misma plataforma en todos</button>' : ''}</div>
+        <p class="small-t muted" style="flex-basis:100%;margin:0">Estudiantes y acudientes ven un botón «Ir a la clase» en su consulta. Úsalo para Classroom, Teams, Moodle, Padlet o la plataforma donde entregan trabajos.</p>
+        <datalist id="dlPlat"><option value="Google Classroom"><option value="Microsoft Teams"><option value="Moodle"><option value="Padlet"><option value="Edmodo"><option value="Schoology"></datalist></form>
       ${c.agenda_ref ? '<div class="notice" style="margin:10px 0">Este curso viene de tu Agenda docente: los estudiantes que agregues, renombres o traslades allí se actualizan aquí solos. Las notas y evidencias del Aula no cambian.</div>' : ''}
       ${avisoTraslado ? `<div class="notice" style="margin:10px 0">${avisoTraslado}</div>` : ''}
-      <p class="muted small-t">${ests.length} estudiantes. El código sirve al estudiante y a su acudiente para consultar en «Notas y evidencias». «Trasladar» lo pasa a otro curso con sus notas y evidencias; «Retirar» lo borra del curso y de la base de datos.</p>
+      <p class="muted small-t">${ests.length} estudiantes. El código sirve al estudiante y a su acudiente para consultar en «Notas y clase». «Trasladar» lo pasa a otro curso con sus notas; «Retirar» lo borra del curso y de la base de datos.</p>
       ${ests.length ? `<table class="stack"><thead><tr><th>Estudiante</th><th>Código</th><th class="noprint">Acciones</th></tr></thead><tbody>
       ${ests.map(s => `<tr style="${s.activo ? '' : 'opacity:.5'}"><td>${esc(s.nombre)}${s.activo ? '' : ' <span class="tag red">Retirado</span>'}</td><td class="code">${esc(s.codigo)}</td>
         <td class="noprint"><div class="row" style="gap:4px"><button class="ghost small" data-ren="${esc(s.id)}">Renombrar</button><button class="ghost small" data-cod="${esc(s.id)}">Nuevo código</button>
@@ -649,6 +631,17 @@ async function tCursos() {
   };
   body().querySelectorAll('[data-open]').forEach(b => b.onclick = () => { st.curso = b.dataset.open; tCursos(); });
   if (!c) return;
+  $('#linkF').onsubmit = async e => {
+    e.preventDefault(); const plataforma = $('#linkP').value.trim(), enlace = $('#linkU').value.trim();
+    if (enlace && !/^https:\/\//i.test(enlace)) { toast('El enlace debe empezar por https://'); return; }
+    const { error } = await sb.from('aula_cursos').update({ plataforma, enlace }).eq('id', c.id); if (error) return err(error);
+    await cargarCursos(); toast(enlace ? 'Enlace guardado: ya aparece en la consulta de los estudiantes' : 'Enlace quitado'); tCursos();
+  };
+  if ($('#linkAll')) $('#linkAll').onclick = async () => {
+    const plataforma = $('#linkP').value.trim(); if (!plataforma) { toast('Escribe primero la plataforma'); return; }
+    const { error } = await sb.from('aula_cursos').update({ plataforma }).eq('plataforma', ''); if (error) return err(error);
+    await cargarCursos(); toast('Plataforma puesta en los cursos que no tenían. Falta pegar el enlace de cada uno.'); tCursos();
+  };
   $('#btnPrint').onclick = () => { const v = $('#v-panel'); v.classList.add('print-on'); document.querySelectorAll('#pBody .two>div:first-child').forEach(x => x.classList.add('noprint')); window.print(); v.classList.remove('print-on'); };
   $('#btnDelCur').onclick = async () => {
     if (!confirm(`¿Eliminar el curso ${cursoNombre(c)} con todos sus estudiantes, actividades, notas y evidencias? Esto no se puede deshacer.`)) return;
