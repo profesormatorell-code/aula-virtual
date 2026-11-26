@@ -106,6 +106,7 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--soft);font-si
       <a href="#portafolio">Portafolio</a>
       <a href="#consulta">Notas y evidencias</a>
       <a href="#panel">Panel docente</a>
+      <a href="../agenda-docente/">Mi agenda</a>
     </nav>
   </div>
 </header>
@@ -197,7 +198,8 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--soft);font-si
 <section class="view" id="v-panel">
   <div class="wrap band">
     <div id="pLogin" class="two">
-      <div><h1>Panel docente</h1><p class="muted">Entra con el mismo usuario de tu Agenda docente.</p></div>
+      <div><h1>Panel docente</h1><p class="muted">Usa la misma cuenta de la Agenda docente. Si ya iniciaste sesión allí en este navegador, entrarás automáticamente.</p>
+        <p class="small-t muted">¿No tienes cuenta u olvidaste tu contraseña? Hazlo desde la <a href="../agenda-docente/">Agenda docente</a>: la cuenta sirve para las dos.</p></div>
       <form class="paper ruled" id="pForm">
         <label for="pEmail">Correo</label><input id="pEmail" type="email" autocomplete="username" required>
         <label for="pPass" style="margin-top:10px">Contraseña</label><input id="pPass" type="password" autocomplete="current-password" required>
@@ -228,13 +230,13 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--soft);font-si
 <footer><div class="wrap" id="foot">Aula virtual</div></footer>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js"></script>
 <script>
 {
 /* ================= CONFIGURACIÓN ================= */
 const CONFIG = {
   SUPABASE_URL: 'https://dkgoyrnsxmhvkzutreyx.supabase.co',
-  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZ295cm5zeG1odmt6dXRyZXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MTYyMDUsImV4cCI6MjExMTE5MjIwNX0.rtz1bzPhZ7ZvJnRwT6fGINMgMCzy9-fnvMWhstxTENI',
+  SUPABASE_KEY: 'sb_publishable_FBgZATPBbM4KoVJVhHqsLA_G-_CSBAT', // misma clave pública que la Agenda
   SITIO: 'profe-bernardo'   // identificador público; debe coincidir con el de tu Perfil
 };
 const ASIGNATURAS = ['Ética y Valores','Educación Religiosa','Ciencias Sociales'];
