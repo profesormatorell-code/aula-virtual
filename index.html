@@ -118,6 +118,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .sheet input{width:64px;margin:0;padding:6px;text-align:right;font-variant-numeric:tabular-nums;border-color:transparent;background:transparent}
 .sheet input:focus{background:light-dark(#fff4c4,#3d3510)}
 .sheet .yr{background:#eef2ff}.sheet tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.dkp{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}.dk{background:var(--paper,#fff);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid}.dk span{font-size:12.5px;color:var(--muted,#667)}.dk b{font-size:24px}.dk small{color:var(--muted,#667);font-size:12px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px 26px}.dash h3{margin:14px 0 6px;font-size:16px}
 .niv{display:inline-block;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px;vertical-align:middle}.niv.bajo{background:#fde2dd;color:#a3271a}.niv.basico{background:#fff1c9;color:#7a5a00}.niv.alto{background:#dff1e2;color:#1f6b33}.niv.superior{background:#dfe8ff;color:#2a4d8f}
 .sheet input.low{color:var(--red);font-weight:700}
 .sheet input.just{background:#e6eefc;color:#2a4d8f;font-weight:700;text-align:center}.sheet input.ne{background:#fde8dc;color:#a4430f;font-weight:700;text-align:center}
@@ -779,6 +781,40 @@ async function tCursos() {
   });
 }
 
+/* ---------- Estadísticas (periodo y año) ---------- */
+const LV = [['Bajo', '#c0392b'], ['Básico', '#d39b00'], ['Alto', '#2e8b57'], ['Superior', '#2a5bb8']];
+const lvI = v => v < 60 ? 0 : v < 80 ? 1 : v < 90 ? 2 : 3;
+function stt(a) { const v = a.filter(x => x != null).map(Number).sort((x, y) => x - y), n = v.length; if (!n) return { n: 0 };
+  const m = v.reduce((x, y) => x + y, 0) / n, md = n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2, sd = Math.sqrt(v.reduce((x, y) => x + (y - m) ** 2, 0) / n);
+  return { n, mean: m, median: md, sd, min: v[0], max: v[n - 1], pass: v.filter(x => x >= 60).length }; }
+const lvCount = vals => { const c = [0, 0, 0, 0]; vals.forEach(v => { if (v != null) c[lvI(v)]++; }); return c; };
+function bins(vals) { const B = []; for (let a = 20; a < 100; a += 10) B.push({ a, b: a === 90 ? 100 : a + 9, n: 0 }); vals.forEach(v => { if (v == null) return; B[Math.min(B.length - 1, Math.max(0, Math.floor((v - 20) / 10)))].n++; }); return B; }
+const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+function svgBars(items, { max, unit = '', w = 520 } = {}) { const H = 26, lw = 205, M = max || Math.max(1, ...items.map(i => i.v || 0)), h = items.length * H + 6;
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" style="max-width:${w}px;display:block">${items.map((it, i) => { const y = i * H + 4, bw = Math.max(0, (w - lw - 60) * (it.v || 0) / M), l = String(it.l);
+    return `<text x="${lw - 8}" y="${y + 15}" text-anchor="end" font-size="12" fill="currentColor">${esc(l.length > 32 ? l.slice(0, 31) + '…' : l)}</text><rect x="${lw}" y="${y + 3}" width="${bw}" height="16" rx="4" fill="${it.c || '#4c56c4'}"/><text x="${lw + bw + 6}" y="${y + 15}" font-size="12" font-weight="700" fill="currentColor">${it.v == null ? '—' : String(it.v).replace('.', ',')}${unit}${it.x ? ` <tspan font-weight="400" opacity=".7">${esc(it.x)}</tspan>` : ''}</text>`; }).join('')}</svg>`; }
+function svgCols(items, { w = 520 } = {}) { const H = 170, M = Math.max(1, ...items.map(i => i.v)), cw = (w - 20) / items.length;
+  return `<svg viewBox="0 0 ${w} ${H + 34}" width="100%" role="img" style="max-width:${w}px;display:block">${items.map((it, i) => { const bh = (H - 20) * it.v / M, x = 10 + i * cw;
+    return `<rect x="${x + 4}" y="${H - bh}" width="${cw - 8}" height="${bh}" rx="4" fill="${it.c}"/>${it.v ? `<text x="${x + cw / 2}" y="${H - bh - 5}" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">${it.v}</text>` : ''}<text x="${x + cw / 2}" y="${H + 16}" text-anchor="middle" font-size="11" fill="currentColor">${it.l}</text>`; }).join('')}<line x1="8" x2="${w - 8}" y1="${H}" y2="${H}" stroke="currentColor" opacity=".3"/></svg>`; }
+const kpiD = (l, v, x = '') => `<div class="dk"><span>${l}</span><b>${v}</b>${x ? `<small>${x}</small>` : ''}</div>`;
+function dashHtml(D) { const T = D.S, lv = lvCount(D.vals), tot = lv.reduce((a, b) => a + b, 0) || 1;
+  return `<section class="plain dash" id="dash" style="margin-top:22px"><div class="row" style="align-items:center;margin-bottom:10px"><h2 style="margin:0;flex:1 1 auto">Estadísticas · ${esc(D.title)}</h2><button id="dashX" style="flex:0 0 auto">Descargar estadísticas en Excel</button></div>
+  ${!T.n ? '<p class="muted">Aún no hay notas para calcular estadísticas.</p>' : `<div class="dkp">${kpiD('Estudiantes con nota', `${T.n} de ${D.total}`)}${kpiD('Promedio', fmt(r1(T.mean)))}${kpiD('Mediana', fmt(T.median))}${kpiD('Desviación estándar', fmt(r1(T.sd)))}${kpiD('Nota más alta', fmtE(T.max))}${kpiD('Nota más baja', fmtE(T.min))}${kpiD('Aprobación', Math.round(T.pass / T.n * 100) + ' %', `${T.pass} con 60 o más`)}${kpiD('En desempeño bajo', lv[0], lv[0] ? 'necesitan apoyo' : '')}</div>
+  <div class="dgrid"><div><h3>Estudiantes por desempeño</h3>${svgBars(LV.map((x, i) => ({ l: x[0], v: lv[i], c: x[1], x: `(${Math.round(lv[i] / tot * 100)} %)` })), { max: Math.max(1, ...lv) })}</div>
+  <div><h3>Distribución de notas</h3>${svgCols(bins(D.vals).map(b => ({ l: `${b.a}–${b.b}`, v: b.n, c: LV[lvI(b.a)][1] })))}</div>${D.extra || ''}</div>
+  ${D.list.length ? `<h3>${D.listTitle}</h3><div class="scroll"><table class="stack"><thead><tr>${D.listHead.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${D.list.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}`}
+  <p class="small-t muted" style="margin-top:8px">${D.note}</p></section>`; }
+function cargarXlsx() { if (window.XLSX) return Promise.resolve(window.XLSX);
+  const intenta = src => new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => window.XLSX ? ok(window.XLSX) : mal(); sc.onerror = mal; document.head.appendChild(sc); });
+  return intenta('../agenda-docente/vendor/xlsx.full.min.js').catch(() => intenta('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js')); }
+async function excelDash(nombre, hojas) { let X; try { X = await cargarXlsx(); } catch (e) { toast('No se pudo preparar el Excel. Revisa tu conexión.'); return; }
+  const wb = X.utils.book_new(), c = cursos.find(x => x.id === st.curso), enc = t => [[t], [cursoNombre(c) + (miPerfil && miPerfil.nombre ? ' · Docente: ' + miPerfil.nombre : '')], []];
+  hojas.forEach(([n, t, rows, ws]) => { const sh = X.utils.aoa_to_sheet(enc(t).concat(rows)); sh['!cols'] = ws.map(w => ({ wch: w })); X.utils.book_append_sheet(wb, sh, n); });
+  X.writeFile(wb, (nombre + ' ' + cursoNombre(c) + '.xlsx').replace(/[\\/:*?"<>|]/g, '-')); }
+const K = (T, total) => T.n ? [['Estudiantes con nota', T.n], ['Estudiantes del curso', total], ['Promedio', r1(T.mean)], ['Mediana', r1(T.median)], ['Desviación estándar', r1(T.sd)], ['Nota más alta', T.max], ['Nota más baja', T.min], ['Aprobados (60 o más)', T.pass], ['% de aprobación', Math.round(T.pass / T.n * 100)]] : [['Sin notas todavía', '']];
+const lvRows = vals => { const c = lvCount(vals), t = c.reduce((a, b) => a + b, 0) || 1; return LV.map((x, i) => [x[0], c[i], Math.round(c[i] / t * 100)]); };
+const binRows = vals => bins(vals).map(b => [`${b.a} a ${b.b}`, b.n]);
+
 /* ---------- Planilla ---------- */
 async function datosCurso(cursoId, periodo) {
   const ests = await fetchAll(() => sb.from('aula_estudiantes').select('id,nombre,activo,agenda_ref').eq('curso_id', cursoId).order('nombre'));
@@ -830,6 +866,28 @@ async function tPlanilla() {
     <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota del periodo</th><th rowspan="2" class="num yr" title="Promedio ponderado (30/30/40) de los periodos que ya tienen notas">Promedio final<br><span class="small-t" style="font-weight:400">del año, hasta ahora</span></th><th rowspan="2" class="num" title="Faltas del periodo registradas en la Agenda">Inasist.</th></tr>
     <tr>${porComp.map(c => c.acts.map(a => `<th title="${esc(a.titulo)}" style="max-width:110px">${esc(a.titulo)}${a.estudiante_id ? `<div class="small-t muted" style="font-weight:400">solo ${esc(ests.find(x => x.id === a.estudiante_id)?.nombre || 'un estudiante')}</div>` : ''}<br><button class="ghost small noprint" data-dela="${esc(a.id)}" aria-label="Eliminar ${esc(a.titulo)}" style="min-height:26px;padding:0 6px;margin-top:2px">×</button></th>`).join('') + '<th class="num">Prom.</th>').join('')}</tr>
   </thead><tbody>${ests.map(fila).join('')}</tbody><tfoot><tr><td class="name"><b>Promedio del curso</b></td>${porComp.map(c => c.acts.map(() => '<td></td>').join('') + `<td class="num avg" data-pc="${c.k}">${fmt(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).comps[c.k]))}</td>`).join('')}<td class="num final" id="pcFin">${fmtE(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).nota))}</td><td class="num yr" id="pcAnio">${fmtE(promCurso(e => anioDe(e.id).nota))}</td><td></td></tr></tfoot></table></div>`}`;
+  const COLC = ['#d39b00', '#e07a5f', '#c0396b', '#4c56c4', '#2a5bb8', '#0e8a7a'];
+  const datosDash = () => { const rs = ests.map(e => ({ e, r: calcPeriodo(cuenta(e.id), id => nota(id, e.id)), y: anioDe(e.id),
+      J: deEst(acts, e.id).filter(a => map.get(a.id + '|' + e.id) === 'J').length, NE: deEst(acts, e.id).filter(a => map.get(a.id + '|' + e.id) === 'NE').length }));
+    const actsD = acts.filter(a => activas.has(a.id)).map(a => { const vals = ests.filter(e => !a.estudiante_id || a.estudiante_id === e.id).map(e => map.get(a.id + '|' + e.id)), t = stt(vals.map(v => v === 'J' ? null : typeof v === 'number' ? v : 0));
+      return { a, v: t.n ? r1(t.mean) : null, J: vals.filter(v => v === 'J').length, NE: vals.filter(v => v === 'NE').length, low: vals.filter(v => typeof v === 'number' && v < 60).length, sin: vals.filter(v => v == null).length }; });
+    const comps = COMP.map(c => { const t = stt(rs.map(x => x.r.comps[c.k])); return { c, v: t.n ? r1(t.mean) : null }; });
+    return { rs, actsD, comps }; };
+  const pintarDash = () => { if (!ests.length) return; const P = datosDash(), old = document.getElementById('dash');
+    const html = dashHtml({ title: `Periodo ${st.periodo}`, S: stt(P.rs.map(x => x.r.nota)), vals: P.rs.map(x => x.r.nota), total: ests.length,
+      extra: `<div><h3>Promedio por componente</h3>${svgBars(P.comps.map((x, i) => ({ l: `${x.c.n} (${x.c.w * 100} %)`, v: x.v, c: COLC[i % 6] })), { max: 100 })}</div>
+        ${P.actsD.length ? `<div><h3>Promedio por actividad</h3>${svgBars(P.actsD.map(x => ({ l: x.a.titulo, v: x.v, c: x.v != null && x.v < 60 ? '#c0392b' : '#4c56c4', x: [x.NE ? x.NE + ' NE' : '', x.J ? x.J + ' J' : ''].filter(Boolean).join(' · ') })), { max: 100 })}</div>` : ''}`,
+      listTitle: 'Estudiantes en desempeño bajo o con actividades pendientes (NE o J)', listHead: ['Estudiante', 'Nota del periodo', 'Desempeño', 'No entregó (NE)', 'Justificado (J)', 'Promedio del año'],
+      list: P.rs.filter(x => (x.r.nota != null && x.r.nota < 60) || x.NE || x.J).sort((a, b) => (a.r.nota ?? 999) - (b.r.nota ?? 999)).map(x => [esc(x.e.nombre), fmtE(x.r.nota), niv(x.r.nota), x.NE || '', x.J || '', fmtE(x.y.nota)]),
+      note: 'Se cuentan las notas del periodo en números enteros. Aprobación: 60 o más. «J» son actividades justificadas pendientes de presentar.' });
+    if (old) old.outerHTML = html; else body().insertAdjacentHTML('beforeend', html);
+    $('#dashX').onclick = () => { const Q = datosDash(); toast('Preparando el Excel…'); excelDash(`Estadísticas periodo ${st.periodo}`, [
+      ['Resumen', `Estadísticas · Periodo ${st.periodo}`, [['Indicador', 'Valor'], ...K(stt(Q.rs.map(x => x.r.nota)), ests.length)], [28, 14]],
+      ['Desempeños', 'Estudiantes por desempeño', [['Desempeño', 'Estudiantes', '%'], ...lvRows(Q.rs.map(x => x.r.nota)), [], ['Rango de notas', 'Estudiantes'], ...binRows(Q.rs.map(x => x.r.nota))], [18, 12, 8]],
+      ['Componentes', 'Promedio por componente', [['Componente', 'Peso (%)', 'Promedio del curso'], ...Q.comps.map(x => [x.c.n, x.c.w * 100, x.v ?? ''])], [34, 10, 18]],
+      ['Actividades', 'Promedio por actividad', [['Actividad', 'Componente', 'Promedio', 'Reprobadas (< 60)', 'No entregó (NE)', 'Justificado (J)', 'Sin nota'], ...Q.actsD.map(x => [x.a.titulo, COMP.find(c => c.k === x.a.componente)?.n || '', x.v ?? '', x.low, x.NE, x.J, x.sin])], [30, 26, 10, 14, 14, 14, 10]],
+      ['Estudiantes', 'Detalle por estudiante', [['Estudiante', ...COMP.map(c => c.n), 'Nota del periodo', 'Desempeño', 'No entregó (NE)', 'Justificado (J)', 'Promedio del año (hasta ahora)'], ...Q.rs.map(x => [x.e.nombre, ...COMP.map(c => r1(x.r.comps[c.k]) ?? ''), x.r.nota ?? '', (NIVEL(x.r.nota) || ['', ''])[1], x.NE, x.J, x.y.nota ?? ''])], [34, ...COMP.map(() => 14), 12, 12, 12, 12, 16]]]); }; };
+  pintarDash();
   bindCurso(tPlanilla);
   $('#sPer').onchange = e => { st.periodo = +e.target.value; tPlanilla(); };
   $('#actF').onsubmit = async e => {
@@ -867,6 +925,7 @@ async function tPlanilla() {
         const y = anioDe(id2); f.querySelector('td.yr').innerHTML = fmtE(y.nota) + niv(y.nota); }
       const ft = tabla.querySelector('tfoot'); if (ft) { porComp.forEach(c => { const t = ft.querySelector(`[data-pc="${c.k}"]`); if (t) t.textContent = fmt(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).comps[c.k])); });
         $('#pcFin').textContent = fmtE(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).nota)); $('#pcAnio').textContent = fmtE(promCurso(e => anioDe(e.id).nota)); }
+      clearTimeout(window.__dt); window.__dt = setTimeout(pintarDash, 500);
     });
     tabla.addEventListener('keydown', e => {
       if (e.key !== 'Enter' || !e.target.matches('input[data-a]')) return;
@@ -907,6 +966,22 @@ async function tAnual() {
   ${filas.map(f => `<tr><td>${esc(f.e.nombre)}</td>${[1,2,3].map(p => `<td class="num">${fmtE(f.per[p].nota)}${f.per[p].hayDatos && !f.per[p].completo ? '*' : ''}</td>`).join('')}
     <td class="num"><b style="color:${f.anio.nota != null && f.anio.nota < 60 ? 'var(--red)' : 'var(--blue)'}">${fmtE(f.anio.nota)}</b></td><td>${niv(f.anio.nota)}</td><td class="small-t muted">${f.anio.completo ? 'Final' : 'Parcial'}</td></tr>`).join('')}
   </tbody></table><p class="small-t muted" style="margin-top:10px">* Periodo con componentes aún sin actividades: nota parcial. «Parcial» en el año = se pondera solo con los periodos que tienen notas.</p></div>` : '<div class="notice">Este curso aún no tiene estudiantes activos.</div>'}`;
+  if (filas.length) {
+    const necesita = f => { let acc = 0, rem = 0, alguno = false; for (const p of [1,2,3]) { if (f.per[p].hayDatos) { acc += f.per[p].nota * PESO_P[p]; alguno = true; } else rem += PESO_P[p]; }
+      if (!rem || !alguno) return null; const n = (60 - acc) / rem; return n <= 20 ? 'Ya alcanza' : n > 100 ? 'No alcanza' : Math.ceil(n); };
+    const xs = filas.map(f => ({ ...f, need: necesita(f) }));
+    body().insertAdjacentHTML('beforeend', dashHtml({ title: 'Año ' + ((cursos.find(x => x.id === st.curso) || {}).anio || ''), S: stt(xs.map(x => x.anio.nota)), vals: xs.map(x => x.anio.nota), total: xs.length,
+      extra: `<div><h3>Promedio del curso por periodo</h3>${svgBars([1,2,3].map(p => { const t = stt(xs.map(x => x.per[p].nota)); return { l: `Periodo ${p} (${PESO_P[p] * 100} %)`, v: t.n ? r1(t.mean) : null, c: '#2a5bb8', x: t.n ? `aprobación ${Math.round(t.pass / t.n * 100)} %` : '' }; }), { max: 100 })}</div>
+        <div><h3>Aprobación por periodo</h3>${svgBars([1,2,3].map(p => { const t = stt(xs.map(x => x.per[p].nota)); return { l: `Periodo ${p}`, v: t.n ? Math.round(t.pass / t.n * 100) : null, c: '#2e8b57' }; }), { max: 100, unit: ' %' })}</div>`,
+      listTitle: 'Estudiantes en desempeño bajo o en riesgo de perder el año', listHead: ['Estudiante', 'P1', 'P2', 'P3', 'Promedio del año', 'Desempeño', 'Necesita en lo que falta'],
+      list: xs.filter(x => (x.anio.nota != null && x.anio.nota < 60) || x.need === 'No alcanza' || typeof x.need === 'number').sort((a, b) => (a.anio.nota ?? 999) - (b.anio.nota ?? 999)).map(x => [esc(x.e.nombre), ...[1,2,3].map(p => fmtE(x.per[p].nota)), fmtE(x.anio.nota), niv(x.anio.nota), x.need == null ? '' : typeof x.need === 'number' ? `<b>${x.need}</b>` : x.need]),
+      note: 'El promedio del año usa los periodos que ya tienen notas, con sus pesos (30 %, 30 % y 40 %). «Necesita» es la nota mínima en lo que falta para llegar a 60.' }));
+    $('#dashX').onclick = () => { toast('Preparando el Excel…'); excelDash('Estadísticas del año', [
+      ['Resumen', 'Estadísticas del año', [['Indicador', 'Valor'], ...K(stt(xs.map(x => x.anio.nota)), xs.length)], [28, 14]],
+      ['Desempeños', 'Estudiantes por desempeño (promedio del año)', [['Desempeño', 'Estudiantes', '%'], ...lvRows(xs.map(x => x.anio.nota)), [], ['Rango de notas', 'Estudiantes'], ...binRows(xs.map(x => x.anio.nota))], [18, 12, 8]],
+      ['Periodos', 'Resultados por periodo', [['Periodo', 'Peso (%)', 'Promedio del curso', 'Mediana', 'Aprobación (%)', 'Estudiantes con nota'], ...[1,2,3].map(p => { const t = stt(xs.map(x => x.per[p].nota)); return [`Periodo ${p}`, PESO_P[p] * 100, t.n ? r1(t.mean) : '', t.n ? r1(t.median) : '', t.n ? Math.round(t.pass / t.n * 100) : '', t.n]; })], [14, 10, 18, 10, 14, 18]],
+      ['Estudiantes', 'Detalle por estudiante', [['Estudiante', 'P1', 'P2', 'P3', 'Promedio del año', 'Desempeño', 'Estado', 'Necesita en lo que falta'], ...xs.map(x => [x.e.nombre, ...[1,2,3].map(p => x.per[p].nota ?? ''), x.anio.nota ?? '', (NIVEL(x.anio.nota) || ['', ''])[1], x.anio.completo ? 'Final' : 'Parcial', x.need ?? ''])], [34, 8, 8, 8, 16, 12, 10, 18]]]); };
+  }
   bindCurso(tAnual);
   $('#btnCsv').onclick = () => {
     const c = cursos.find(x => x.id === st.curso);
