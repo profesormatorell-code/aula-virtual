@@ -117,6 +117,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .sheet td.name{position:sticky;left:0;background:var(--paper);min-width:170px;font-weight:700}
 .sheet input{width:64px;margin:0;padding:6px;text-align:right;font-variant-numeric:tabular-nums;border-color:transparent;background:transparent}
 .sheet input:focus{background:light-dark(#fff4c4,#3d3510)}
+.sheet .yr{background:#eef2ff}.sheet tfoot td{font-weight:700;border-top:2px solid var(--line)}
 .niv{display:inline-block;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px;vertical-align:middle}.niv.bajo{background:#fde2dd;color:#a3271a}.niv.basico{background:#fff1c9;color:#7a5a00}.niv.alto{background:#dff1e2;color:#1f6b33}.niv.superior{background:#dfe8ff;color:#2a4d8f}
 .sheet input.low{color:var(--red);font-weight:700}
 .sheet input.just{background:#e6eefc;color:#2a4d8f;font-weight:700;text-align:center}.sheet input.ne{background:#fde8dc;color:#a4430f;font-weight:700;text-align:center}
@@ -798,8 +799,10 @@ async function datosCurso(cursoId, periodo) {
 async function tPlanilla() {
   if (!cursos.length) { body().innerHTML = sinCursos(); return; }
   body().innerHTML = '<p class="muted">Cargando planilla…</p>';
-  let d; try { d = await datosCurso(st.curso, st.periodo); } catch (e) { return err(e); }
-  const { ests, acts, map, activas, asis } = d;
+  let d; try { d = await datosCurso(st.curso); } catch (e) { return err(e); }
+  const { ests, map, activas, asis } = d, todas = d.acts, acts = todas.filter(a => a.periodo === st.periodo);
+  const anioDe = eid => { const per = {}; for (const p of [1,2,3]) per[p] = calcPeriodo(deEst(todas, eid).filter(a => a.periodo === p && activas.has(a.id)), id => nota(id, eid)); return calcAnio(per); };
+  const promCurso = f => { const v = ests.map(f).filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
   const cuenta = (eid) => deEst(acts, eid).filter(a => activas.has(a.id));
   const inas = e => asis.filter(t => t.estudiante_ref === e.agenda_ref && t.periodo === st.periodo && (t.marca === 'F' || t.marca === 'E')).length;
   const curSel = cursos.find(x => x.id === st.curso);
@@ -809,7 +812,7 @@ async function tPlanilla() {
     const r = calcPeriodo(cuenta(e.id), id => nota(id, e.id));
     return `<tr data-e="${esc(e.id)}"><td class="name">${esc(e.nombre)}</td>${porComp.map(c => c.acts.map(a => { if (a.estudiante_id && a.estudiante_id !== e.id) return '<td class="na" title="Actividad de otro estudiante">—</td>'; const v = nota(a.id, e.id);
       return `<td><input type="text" autocomplete="off" maxlength="5" aria-label="${esc(e.nombre)} – ${esc(a.titulo)}" data-a="${esc(a.id)}" value="${v ?? ''}" class="${claseNota(v)}" title="${v === 'J' ? 'Justificado: no cuenta hasta que presente' : v === 'NE' ? 'No entregó: cuenta 0' : ''}"></td>`; }).join('')
-      + `<td class="num avg" data-c="${c.k}">${fmt(r.comps[c.k])}</td>`).join('')}<td class="num final">${fmtE(r.nota)}${niv(r.nota)}</td><td class="num">${e.agenda_ref ? inas(e) : ''}</td></tr>`;
+      + `<td class="num avg" data-c="${c.k}">${fmt(r.comps[c.k])}</td>`).join('')}<td class="num final">${fmtE(r.nota)}${niv(r.nota)}</td>${(() => { const y = anioDe(e.id); return `<td class="num yr">${fmtE(y.nota)}${niv(y.nota)}</td>`; })()}<td class="num">${e.agenda_ref ? inas(e) : ''}</td></tr>`;
   };
   body().innerHTML = `<div class="row noprint">${selCurso()}
     <div><label for="sPer">Periodo</label><select id="sPer">${[1,2,3].map(p => `<option value="${p}"${p === st.periodo ? ' selected' : ''}>Periodo ${p}</option>`).join('')}</select></div>
@@ -824,9 +827,9 @@ async function tPlanilla() {
   <p class="small-t muted">Escribe la nota y pasa a la siguiente casilla: se guarda sola. Escala 20 a 100. Una actividad empieza a contar cuando tiene la primera nota; desde ahí, una casilla vacía cuenta como 0 (SIEE).</p>
   <p class="small-t" style="margin:4px 0 10px;display:flex;gap:14px;flex-wrap:wrap"><span><span class="mk just">J</span> Justificado: no cuenta en su promedio hasta que presente</span><span><span class="mk ne">NE</span> No entregó: cuenta 0</span><span><span class="mk low">45</span> Reprobada (menos de 60)</span></p>
   <div class="scroll plain" style="padding:0"><table class="sheet"><thead>
-    <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota periodo</th><th rowspan="2" class="num" title="Faltas del periodo registradas en la Agenda">Inasist.</th></tr>
+    <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota del periodo</th><th rowspan="2" class="num yr" title="Promedio ponderado (30/30/40) de los periodos que ya tienen notas">Promedio final<br><span class="small-t" style="font-weight:400">del año, hasta ahora</span></th><th rowspan="2" class="num" title="Faltas del periodo registradas en la Agenda">Inasist.</th></tr>
     <tr>${porComp.map(c => c.acts.map(a => `<th title="${esc(a.titulo)}" style="max-width:110px">${esc(a.titulo)}${a.estudiante_id ? `<div class="small-t muted" style="font-weight:400">solo ${esc(ests.find(x => x.id === a.estudiante_id)?.nombre || 'un estudiante')}</div>` : ''}<br><button class="ghost small noprint" data-dela="${esc(a.id)}" aria-label="Eliminar ${esc(a.titulo)}" style="min-height:26px;padding:0 6px;margin-top:2px">×</button></th>`).join('') + '<th class="num">Prom.</th>').join('')}</tr>
-  </thead><tbody>${ests.map(fila).join('')}</tbody></table></div>`}`;
+  </thead><tbody>${ests.map(fila).join('')}</tbody><tfoot><tr><td class="name"><b>Promedio del curso</b></td>${porComp.map(c => c.acts.map(() => '<td></td>').join('') + `<td class="num avg" data-pc="${c.k}">${fmt(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).comps[c.k]))}</td>`).join('')}<td class="num final" id="pcFin">${fmtE(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).nota))}</td><td class="num yr" id="pcAnio">${fmtE(promCurso(e => anioDe(e.id).nota))}</td><td></td></tr></tfoot></table></div>`}`;
   bindCurso(tPlanilla);
   $('#sPer').onchange = e => { st.periodo = +e.target.value; tPlanilla(); };
   $('#actF').onsubmit = async e => {
@@ -860,7 +863,10 @@ async function tPlanilla() {
       const filas = antes !== activas.has(aid) ? [...tabla.querySelectorAll('tbody tr[data-e]')] : [tr];
       for (const f of filas) { const id2 = f.dataset.e, r = calcPeriodo(cuenta(id2), id => nota(id, id2));
         f.querySelectorAll('td.avg').forEach(td => td.textContent = fmt(r.comps[td.dataset.c]));
-        f.querySelector('td.final').innerHTML = fmtE(r.nota) + niv(r.nota); }
+        f.querySelector('td.final').innerHTML = fmtE(r.nota) + niv(r.nota);
+        const y = anioDe(id2); f.querySelector('td.yr').innerHTML = fmtE(y.nota) + niv(y.nota); }
+      const ft = tabla.querySelector('tfoot'); if (ft) { porComp.forEach(c => { const t = ft.querySelector(`[data-pc="${c.k}"]`); if (t) t.textContent = fmt(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).comps[c.k])); });
+        $('#pcFin').textContent = fmtE(promCurso(e => calcPeriodo(cuenta(e.id), id => nota(id, e.id)).nota)); $('#pcAnio').textContent = fmtE(promCurso(e => anioDe(e.id).nota)); }
     });
     tabla.addEventListener('keydown', e => {
       if (e.key !== 'Enter' || !e.target.matches('input[data-a]')) return;
@@ -871,9 +877,9 @@ async function tPlanilla() {
     });
   }
   $('#btnCsv').onclick = () => {
-    const head = ['Estudiante', ...porComp.flatMap(c => [...c.acts.map(a => `${c.n}: ${a.titulo}`), `Prom. ${c.n}`]), `Nota periodo ${st.periodo}`, 'Desempeño'];
+    const head = ['Estudiante', ...porComp.flatMap(c => [...c.acts.map(a => `${c.n}: ${a.titulo}`), `Prom. ${c.n}`]), `Nota periodo ${st.periodo}`, 'Desempeño', 'Promedio final del año (hasta ahora)', 'Desempeño del año'];
     const rows = ests.map(e => { const r = calcPeriodo(cuenta(e.id), id => nota(id, e.id));
-      return [e.nombre, ...porComp.flatMap(c => [...c.acts.map(a => a.estudiante_id && a.estudiante_id !== e.id ? 'N/A' : nota(a.id, e.id) ?? ''), r.comps[c.k] == null ? '' : r.comps[c.k].toFixed(1)]), r.nota == null ? '' : String(r.nota), (NIVEL(r.nota) || ['', ''])[1]]; });
+      return [e.nombre, ...porComp.flatMap(c => [...c.acts.map(a => a.estudiante_id && a.estudiante_id !== e.id ? 'N/A' : nota(a.id, e.id) ?? ''), r.comps[c.k] == null ? '' : r.comps[c.k].toFixed(1)]), r.nota == null ? '' : String(r.nota), (NIVEL(r.nota) || ['', ''])[1], ...(y => [y.nota == null ? '' : String(y.nota), (NIVEL(y.nota) || ['', ''])[1]])(anioDe(e.id))]; });
     const c = cursos.find(x => x.id === st.curso);
     descargarCsv([head, ...rows], `notas_${cursoNombre(c)}_P${st.periodo}.csv`);
   };
