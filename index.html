@@ -118,6 +118,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .sheet input{width:64px;margin:0;padding:6px;text-align:right;font-variant-numeric:tabular-nums;border-color:transparent;background:transparent}
 .sheet input:focus{background:light-dark(#fff4c4,#3d3510)}
 .sheet input.low{color:var(--red);font-weight:700}
+.sheet input.just{background:#e6eefc;color:#2a4d8f;font-weight:700;text-align:center}.sheet input.ne{background:#fde8dc;color:#a4430f;font-weight:700;text-align:center}
+.mk{display:inline-block;min-width:26px;text-align:center;border-radius:6px;padding:0 5px;font-weight:700;font-size:12px}.mk.just{background:#e6eefc;color:#2a4d8f}.mk.ne{background:#fde8dc;color:#a4430f}.mk.low{color:var(--red);border:1px solid var(--line)}
 .sheet td.avg{background:var(--pane);font-weight:700}
 .sheet td.final{font-weight:700;color:var(--board);background:var(--p5)}
 :root[data-theme=dark] .sheet td.final{color:var(--chalk)}
@@ -348,14 +350,20 @@ async function fetchAll(build) {
 function calcPeriodo(acts, nota) {
   const comps = {}; let suma = 0, pesos = 0;
   for (const c of COMP) {
-    const a = acts.filter(x => x.componente === c.k);
+    const a = acts.filter(x => x.componente === c.k && nota(x.id) !== 'J');
     if (!a.length) { comps[c.k] = null; continue; }
-    const prom = a.reduce((s, x) => s + (nota(x.id) ?? 0), 0) / a.length;
+    const prom = a.reduce((s, x) => { const v = nota(x.id); return s + (typeof v === 'number' ? v : 0); }, 0) / a.length;
     comps[c.k] = prom; suma += prom * c.w; pesos += c.w;
   }
   const completo = COMP.every(c => comps[c.k] != null);
   return { comps, nota: pesos ? suma / pesos : null, completo, hayDatos: pesos > 0 };
 }
+/* J = justificado (no cuenta hasta que presente), NE = no entregó (cuenta 0) */
+const valNota = n => n.estado || (n.nota == null ? null : Number(n.nota));
+const leerNota = raw => { const t = raw.trim().toUpperCase().replace(',', '.'); if (t === '') return { vacio: true };
+  if (['J', 'E', 'JUS', 'EXC'].includes(t)) return { estado: 'J' }; if (['NE', 'N', 'NO'].includes(t)) return { estado: 'NE' };
+  const v = Math.round(Number(t) * 10) / 10; return v >= 0 && v <= 100 ? { nota: v } : { error: true }; };
+const claseNota = v => v === 'J' ? 'just' : v === 'NE' ? 'ne' : (typeof v === 'number' && v < 60 ? 'low' : '');
 const deEst = (acts, eid) => acts.filter(a => !a.estudiante_id || a.estudiante_id === eid);
 function dlgAccion({ titulo, intro, palabra, boton, opciones, resumen }) {
   return new Promise(res => {
@@ -475,7 +483,7 @@ async function recargarConsulta() {
 }
 function renderConsulta() {
   $('#cLogin').hidden = true; const out = $('#cOut'); out.hidden = false;
-  const d = cData, notas = new Map(d.notas.map(n => [n.actividad_id, Number(n.nota)]));
+  const d = cData, notas = new Map(d.notas.map(n => [n.actividad_id, valNota(n)]));
   const per = {}; for (const p of [1,2,3]) per[p] = calcPeriodo(d.actividades.filter(a => a.periodo === p && a.activa !== false), id => notas.get(id) ?? null);
   const asis = (d.asistencia || []).filter(t => t.periodo == null || t.periodo === cPer), cnt = k => asis.filter(t => t.marca === k).length;
   const anio = calcAnio(per), cur = per[cPer];
@@ -498,7 +506,7 @@ function renderConsulta() {
     </div>
     <div class="plain"><h3>Actividades</h3>
       ${acts.length ? `<table><thead><tr><th>Actividad</th><th>Componente</th><th class="num">Nota</th></tr></thead><tbody>
-      ${acts.map(a => { const n = notas.get(a.id); return `<tr><td>${esc(a.titulo)}${a.fecha ? `<div class="small-t muted">${esc(fdate(a.fecha))}</div>` : ''}</td><td>${esc(COMP.find(c => c.k === a.componente)?.n)}</td><td class="num">${n == null && a.activa === false ? '<span class="muted">Aún sin calificar</span>' : n == null ? '<span style="color:var(--red)">Pendiente (cuenta 0)</span>' : fmt(n)}</td></tr>`; }).join('')}
+      ${acts.map(a => { const n = notas.get(a.id); return `<tr><td>${esc(a.titulo)}${a.fecha ? `<div class="small-t muted">${esc(fdate(a.fecha))}</div>` : ''}</td><td>${esc(COMP.find(c => c.k === a.componente)?.n)}</td><td class="num">${n === 'J' ? '<span style="color:#2a4d8f">Justificado (no cuenta hasta que presentes)</span>' : n === 'NE' ? '<span style="color:#a4430f;font-weight:700">No entregó (cuenta 0)</span>' : n == null && a.activa === false ? '<span class="muted">Aún sin calificar</span>' : n == null ? '<span style="color:var(--red)">Pendiente (cuenta 0)</span>' : n < 60 ? `<span style="color:var(--red);font-weight:700">${fmt(n)}</span>` : fmt(n)}</td></tr>`; }).join('')}
       </tbody></table>` : '<p class="muted">Aún no hay actividades registradas en este periodo.</p>'}
     </div>
   </div>
@@ -773,10 +781,10 @@ async function datosCurso(cursoId, periodo) {
   const ids = acts.map(a => a.id);
   for (let i = 0; i < ids.length; i += 100) {
     const lote = ids.slice(i, i + 100);
-    notas = notas.concat(await fetchAll(() => sb.from('aula_notas').select('actividad_id,estudiante_id,nota').in('actividad_id', lote)));
+    notas = notas.concat(await fetchAll(() => sb.from('aula_notas').select('actividad_id,estudiante_id,nota,estado').in('actividad_id', lote)));
   }
-  const map = new Map(notas.map(n => [n.actividad_id + '|' + n.estudiante_id, Number(n.nota)]));
-  const activas = new Set(notas.map(n => n.actividad_id));
+  const map = new Map(notas.map(n => [n.actividad_id + '|' + n.estudiante_id, valNota(n)]));
+  const activas = new Set(notas.filter(n => n.estado !== 'J').map(n => n.actividad_id));
   const refs = ests.filter(e => e.activo && e.agenda_ref).map(e => e.agenda_ref); let asis = [];
   for (let i = 0; i < refs.length; i += 100) { const L = refs.slice(i, i + 100); asis = asis.concat(await fetchAll(() => sb.from('aula_asistencia').select('estudiante_ref,fecha,marca,periodo').in('estudiante_ref', L))); }
   return { ests: ests.filter(e => e.activo), acts, map, activas, asis };
@@ -794,7 +802,7 @@ async function tPlanilla() {
   const fila = e => {
     const r = calcPeriodo(cuenta(e.id), id => nota(id, e.id));
     return `<tr data-e="${esc(e.id)}"><td class="name">${esc(e.nombre)}</td>${porComp.map(c => c.acts.map(a => { if (a.estudiante_id && a.estudiante_id !== e.id) return '<td class="na" title="Actividad de otro estudiante">—</td>'; const v = nota(a.id, e.id);
-      return `<td><input type="number" inputmode="decimal" min="0" max="100" step="0.1" aria-label="${esc(e.nombre)} – ${esc(a.titulo)}" data-a="${esc(a.id)}" value="${v ?? ''}" class="${v != null && v < 60 ? 'low' : ''}"></td>`; }).join('')
+      return `<td><input type="text" autocomplete="off" maxlength="5" aria-label="${esc(e.nombre)} – ${esc(a.titulo)}" data-a="${esc(a.id)}" value="${v ?? ''}" class="${claseNota(v)}" title="${v === 'J' ? 'Justificado: no cuenta hasta que presente' : v === 'NE' ? 'No entregó: cuenta 0' : ''}"></td>`; }).join('')
       + `<td class="num avg" data-c="${c.k}">${fmt(r.comps[c.k])}</td>`).join('')}<td class="num final">${fmt(r.nota)}</td><td class="num">${e.agenda_ref ? inas(e) : ''}</td></tr>`;
   };
   body().innerHTML = `<div class="row noprint">${selCurso()}
@@ -807,7 +815,8 @@ async function tPlanilla() {
     <div style="flex:0 0 auto"><button type="submit">Agregar</button></div></div></form>
   ${!ests.length ? '<div class="notice">Este curso aún no tiene estudiantes activos.</div>' : `
   ${curSel && curSel.agenda_ref ? '<div class="notice" style="margin-bottom:10px">Este curso se comparte con tu Agenda docente: las actividades y notas que pongas aquí aparecen allá, y las de allá aparecen aquí (recarga la página para ver lo último). Las inasistencias vienen de la Agenda.</div>' : ''}
-  <p class="small-t muted">Escribe la nota y pasa a la siguiente casilla: se guarda sola. Una actividad empieza a contar cuando tiene la primera nota; desde ahí, una casilla vacía cuenta como 0 (SIEE). Escala 20 a 100.</p>
+  <p class="small-t muted">Escribe la nota y pasa a la siguiente casilla: se guarda sola. Escala 20 a 100. Una actividad empieza a contar cuando tiene la primera nota; desde ahí, una casilla vacía cuenta como 0 (SIEE).</p>
+  <p class="small-t" style="margin:4px 0 10px;display:flex;gap:14px;flex-wrap:wrap"><span><span class="mk just">J</span> Justificado: no cuenta en su promedio hasta que presente</span><span><span class="mk ne">NE</span> No entregó: cuenta 0</span><span><span class="mk low">45</span> Reprobada (menos de 60)</span></p>
   <div class="scroll plain" style="padding:0"><table class="sheet"><thead>
     <tr><th rowspan="2">Estudiante</th>${porComp.map(c => `<th class="grp" colspan="${c.acts.length + 1}">${esc(c.n)} · ${c.w * 100}%</th>`).join('')}<th rowspan="2" class="num">Nota periodo</th><th rowspan="2" class="num" title="Faltas del periodo registradas en la Agenda">Inasist.</th></tr>
     <tr>${porComp.map(c => c.acts.map(a => `<th title="${esc(a.titulo)}" style="max-width:110px">${esc(a.titulo)}${a.estudiante_id ? `<div class="small-t muted" style="font-weight:400">solo ${esc(ests.find(x => x.id === a.estudiante_id)?.nombre || 'un estudiante')}</div>` : ''}<br><button class="ghost small noprint" data-dela="${esc(a.id)}" aria-label="Eliminar ${esc(a.titulo)}" style="min-height:26px;padding:0 6px;margin-top:2px">×</button></th>`).join('') + '<th class="num">Prom.</th>').join('')}</tr>
@@ -827,22 +836,25 @@ async function tPlanilla() {
   if (tabla) {
     tabla.addEventListener('change', async e => {
       const inp = e.target.closest('input[data-a]'); if (!inp) return;
-      const tr = inp.closest('tr'), eid = tr.dataset.e, aid = inp.dataset.a, raw = inp.value.trim().replace(',', '.');
+      const tr = inp.closest('tr'), eid = tr.dataset.e, aid = inp.dataset.a, L = leerNota(inp.value), k = aid + '|' + eid;
       let res;
-      if (raw === '') { res = await sb.from('aula_notas').delete().eq('actividad_id', aid).eq('estudiante_id', eid); if (!res.error) map.delete(aid + '|' + eid); }
+      if (L.vacio) { res = await sb.from('aula_notas').delete().eq('actividad_id', aid).eq('estudiante_id', eid); if (!res.error) map.delete(k); }
+      else if (L.error) { toast('Escribe una nota de 0 a 100, J (justificado) o NE (no entregó)'); inp.value = map.get(k) ?? ''; return; }
       else {
-        const v = Math.round(Number(raw) * 10) / 10;
-        if (!(v >= 0 && v <= 100)) { toast('La nota debe estar entre 0 y 100'); inp.value = map.get(aid + '|' + eid) ?? ''; return; }
-        if (v < 20) toast('Ojo: la escala del SIEE empieza en 20');
-        res = await sb.from('aula_notas').upsert({ actividad_id: aid, estudiante_id: eid, nota: v }, { onConflict: 'actividad_id,estudiante_id' });
-        if (!res.error) { map.set(aid + '|' + eid, v); inp.value = v; }
+        if (L.nota != null && L.nota < 20) toast('Ojo: la escala del SIEE empieza en 20');
+        const val = L.estado || L.nota;
+        res = await sb.from('aula_notas').upsert({ actividad_id: aid, estudiante_id: eid, nota: L.estado ? null : L.nota, estado: L.estado || null }, { onConflict: 'actividad_id,estudiante_id' });
+        if (!res.error) { map.set(k, val); inp.value = val; }
       }
       if (res.error) { inp.style.outline = '2px solid var(--red)'; return err(res.error); }
-      inp.style.outline = ''; inp.classList.toggle('low', map.has(aid + '|' + eid) && map.get(aid + '|' + eid) < 60);
-      if (raw !== '') activas.add(aid); else if (![...map.keys()].some(k => k.startsWith(aid + '|'))) activas.delete(aid);
-      const r = calcPeriodo(cuenta(eid), id => nota(id, eid));
-      tr.querySelectorAll('td.avg').forEach(td => td.textContent = fmt(r.comps[td.dataset.c]));
-      tr.querySelector('td.final').textContent = fmt(r.nota);
+      inp.style.outline = ''; inp.className = claseNota(map.get(k));
+      inp.title = map.get(k) === 'J' ? 'Justificado: no cuenta hasta que presente' : map.get(k) === 'NE' ? 'No entregó: cuenta 0' : '';
+      const antes = activas.has(aid);
+      if ([...map.entries()].some(([kk, v]) => kk.startsWith(aid + '|') && v !== 'J')) activas.add(aid); else activas.delete(aid);
+      const filas = antes !== activas.has(aid) ? [...tabla.querySelectorAll('tbody tr[data-e]')] : [tr];
+      for (const f of filas) { const id2 = f.dataset.e, r = calcPeriodo(cuenta(id2), id => nota(id, id2));
+        f.querySelectorAll('td.avg').forEach(td => td.textContent = fmt(r.comps[td.dataset.c]));
+        f.querySelector('td.final').textContent = fmt(r.nota); }
     });
     tabla.addEventListener('keydown', e => {
       if (e.key !== 'Enter' || !e.target.matches('input[data-a]')) return;
